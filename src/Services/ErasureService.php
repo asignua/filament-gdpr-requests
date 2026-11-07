@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\Services;
 
+use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Enums\RequestStatus;
+use Asignua\FilamentGdprRequests\Enums\StepStatus;
 use Asignua\FilamentGdprRequests\Erasure\ErasurePlan;
 use Asignua\FilamentGdprRequests\Erasure\Findings;
 use Asignua\FilamentGdprRequests\Erasure\Planner;
@@ -16,6 +18,7 @@ use Asignua\FilamentGdprRequests\Exceptions\PlanBlocked;
 use Asignua\FilamentGdprRequests\Jobs\ErasureGroupJob;
 use Asignua\FilamentGdprRequests\Jobs\FinalizeErasureJob;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
+use Asignua\FilamentGdprRequests\Models\GdprRequestStep;
 use Asignua\FilamentGdprRequests\Support\Environment;
 use Asignua\FilamentGdprRequests\Support\Gates;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
@@ -30,7 +33,12 @@ use Throwable;
  */
 final class ErasureService
 {
-    public function __construct(private readonly Planner $planner, private readonly ExportService $exports, private readonly Rescan $rescan) {}
+    public function __construct(
+        private readonly Planner $planner,
+        private readonly ExportService $exports,
+        private readonly Rescan $rescan,
+        private readonly SubjectResolver $subjects,
+    ) {}
 
     public function plan(GdprRequest $request): ErasurePlan
     {
@@ -39,6 +47,10 @@ final class ErasureService
 
     /**
      * Step 1 of 2 that the actor takes: "I have read the preview and I confirm exactly this".
+     *
+     * Also the way forward from `partial` when resuming cannot help, because rows turned up or the map was fixed: a fresh
+     * preview, a fresh confirmation, and four eyes again. Every group runs again under the new plan, which changes
+     * nothing where nothing is left; what the earlier run did stays on the steps and in the log.
      */
     public function confirm(GdprRequest $request, Authenticatable $actor): ErasurePlan
     {
@@ -46,7 +58,7 @@ final class ErasureService
         Environment::assertSupported();
         $this->assertEligible($request);
 
-        if (!in_array($request->status, [RequestStatus::InProgress, RequestStatus::ErasureConfirmed], true)) {
+        if (!in_array($request->status, [RequestStatus::InProgress, RequestStatus::ErasureConfirmed, RequestStatus::Partial], true)) {
             throw InvalidTransition::translated('cannot_confirm');
         }
 
@@ -56,26 +68,37 @@ final class ErasureService
             throw new PlanBlocked($plan->allBlockers());
         }
 
-        $claimed = GdprRequest::query()->whereKey($request->getKey())
-            ->whereIn('status', [RequestStatus::InProgress->value, RequestStatus::ErasureConfirmed->value])
-            ->update([
-                'status' => RequestStatus::ErasureConfirmed->value,
-                'erasure_confirmed_at' => now(),
-                'erasure_confirmed_by' => (string) $actor->getAuthIdentifier(),
-                'erasure_plan' => json_encode(
-                    [...$plan->summary(), 'order' => array_map(static fn ($group): string => $group->key(), $plan->groups)],
-                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
-                ),
-                // The address the rows are matched on outlives the record it came from: the root may be anonymized
-                // before an e-mail group runs, and on a resume it is gone. A request without one takes the record's.
-                ...$this->addressFromRecord($request, $plan),
-            ]);
+        $rootChanged = $this->subjects->rootChanged($request);
 
-        if ($claimed !== 1) {
-            throw InvalidTransition::translated('cannot_confirm');
-        }
+        DB::transaction(function () use ($request, $actor, $plan, $rootChanged): void {
+            $claimed = GdprRequest::query()->whereKey($request->getKey())
+                ->whereIn('status', [RequestStatus::InProgress->value, RequestStatus::ErasureConfirmed->value, RequestStatus::Partial->value])
+                ->update([
+                    'status' => RequestStatus::ErasureConfirmed->value,
+                    'erasure_confirmed_at' => now(),
+                    'erasure_confirmed_by' => (string) $actor->getAuthIdentifier(),
+                    'erasure_plan' => json_encode(
+                        [...$plan->summary(), 'order' => array_map(static fn ($group): string => $group->key(), $plan->groups), 'root_changed' => $rootChanged],
+                        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
+                    ),
+                    // The address the rows are matched on outlives the record it came from: the root may be anonymized
+                    // before an e-mail group runs, and on a resume it is gone. A request without one takes the record's.
+                    ...$this->addressFromRecord($request, $plan),
+                ]);
 
-        RequestLog::record($request, 'erasure_confirmed', $actor, ['counts' => $plan->counts(), 'fingerprint' => $plan->fingerprint()]);
+            if ($claimed !== 1) {
+                throw InvalidTransition::translated('cannot_confirm');
+            }
+
+            $earlier = $request->steps()->where('status', '!=', StepStatus::Pending->value)->get();
+            $earlier->each(static fn (GdprRequestStep $step) => $step->supersede());
+
+            RequestLog::record($request, 'erasure_confirmed', $actor, ['counts' => $plan->counts(), 'fingerprint' => $plan->fingerprint()]);
+
+            if ($earlier->isNotEmpty()) {
+                RequestLog::record($request, 'erasure_reconfirmed', $actor, ['previous' => $earlier->count()]);
+            }
+        });
 
         $request->refresh();
 

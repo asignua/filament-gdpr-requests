@@ -163,7 +163,7 @@ return [
         'type_reference' => 'Devam etmek için :reference referansını yazın',
         'reference_mismatch' => 'Referans eşleşmiyor.',
         'partial' => 'Kısmen silindi',
-        'partial_help' => 'Bazı gruplar başarısız oldu. Bitti olarak işaretli gruplar silinmiş kalır. Nedeni giderip devam edin: çalıştırma yalnızca ileri gider ve güvenle tekrarlanabilir.',
+        'partial_help' => 'Bazı gruplar başarısız oldu. Bitti olarak işaretli gruplar silinmiş kalır. Nedeni giderip devam edin: çalıştırma yalnızca ileri gider ve güvenle tekrarlanabilir. Yeni satırlar çıktıysa veya veri haritası değiştiyse önizlemeyi okuyup yeniden onaylayın: dört göz ilkesi yeniden geçerlidir.',
         'done' => 'Silme tamamlandı',
         'done_help' => 'Tüm gruplar sonuçlandı. Yedekler, günlükler ve harici sistemler bu aracın kapsamında değildir.',
         'stale' => 'Çalıştırma yanıt vermiyor',
@@ -207,6 +207,7 @@ return [
         'record_email_accepted' => 'Kaydın e-postası kabul edildi',
         'export_remove_failed' => 'Dışa aktarma arşivi kaldırılamadı',
         'erasure_interrupted' => 'Silme kesintiye uğradı',
+        'erasure_reconfirmed' => 'Silme yeniden onaylandı',
     ],
     'notifications' => [
         'failed' => 'İşlem başarısız oldu',
@@ -367,5 +368,6 @@ return [
         'mismatch' => 'Planlanan / işlenen',
         'blockers' => 'Engelleyen',
         'plan_changed' => 'Veri haritası değişti',
+        'previous' => 'Önceki çalıştırmalar',
     ],
 ];

@@ -163,7 +163,7 @@ return [
         'type_reference' => 'Digite a referência :reference para continuar',
         'reference_mismatch' => 'A referência não confere.',
         'partial' => 'Eliminada parcialmente',
-        'partial_help' => 'Alguns grupos falharam. Os grupos marcados como Concluído continuam eliminados. Corrija a causa e retome: a execução só avança e pode ser repetida com segurança.',
+        'partial_help' => 'Alguns grupos falharam. Os grupos marcados como Concluído continuam eliminados. Corrija a causa e retome: a execução só avança e pode ser repetida com segurança. Se surgiram novas linhas ou o mapa de dados mudou, leia a pré-visualização e confirme-a novamente: o princípio dos quatro olhos vale de novo.',
         'done' => 'Eliminação concluída',
         'done_help' => 'Todos os grupos foram resolvidos. Backups, logs e sistemas externos não são cobertos por esta ferramenta.',
         'stale' => 'A execução parou de responder',
@@ -207,6 +207,7 @@ return [
         'record_email_accepted' => 'E-mail do registro aceito',
         'export_remove_failed' => 'O arquivo de exportação não pôde ser removido',
         'erasure_interrupted' => 'Apagamento interrompido',
+        'erasure_reconfirmed' => 'Eliminação confirmada novamente',
     ],
     'notifications' => [
         'failed' => 'A ação falhou',
@@ -367,5 +368,6 @@ return [
         'mismatch' => 'Previsto / tratado',
         'blockers' => 'Bloqueado por',
         'plan_changed' => 'Mapa de dados alterado',
+        'previous' => 'Execuções anteriores',
     ],
 ];

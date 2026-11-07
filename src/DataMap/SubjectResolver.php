@@ -15,7 +15,7 @@ use Illuminate\Database\QueryException;
  * request is a claim and is never used to find rows. A record that cannot be read, an address that differs from it
  * and an address nobody can vouch for all become blockers, for a person to resolve.
  *
- * Once this run has changed the record (the root group is done), its address may already be anonymized. From then on
+ * Once the erasure has changed the record (the root group is done), its address may already be anonymized. From then on
  * the address taken at confirmation is the one in force, and the checks against the record no longer apply.
  */
 final class SubjectResolver
@@ -34,7 +34,7 @@ final class SubjectResolver
         $claimed = Pseudonym::normalizeEmail($request->subject_email);
 
         // The record no longer speaks for itself, but an address that has since become someone else's still finds their rows.
-        if ($this->rootAlreadyErased($request, $root)) {
+        if ($this->rootChanged($request)) {
             return new ResolvedSubject(new Subject($root, $request->subject_id, $claimed), $this->sharedAddress($root, $request->subject_id, $claimed));
         }
 
@@ -113,11 +113,20 @@ final class SubjectResolver
         return null;
     }
 
-    private function rootAlreadyErased(GdprRequest $request, PersonalData $root): bool
+    /**
+     * This request already changed the record. A new confirmation carries that over: it starts the steps again, but the
+     * record does not come back.
+     */
+    public function rootChanged(GdprRequest $request): bool
     {
-        $fingerprint = $request->erasure_plan['fingerprint'] ?? null;
+        if (($request->erasure_plan['root_changed'] ?? false) === true) {
+            return true;
+        }
 
-        if (!is_string($fingerprint)) {
+        $fingerprint = $request->erasure_plan['fingerprint'] ?? null;
+        $root = $request->subject_model === null ? null : $this->registry->rootFor($request->subject_model);
+
+        if (!is_string($fingerprint) || $root === null) {
             return false;
         }
 

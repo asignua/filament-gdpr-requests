@@ -163,7 +163,7 @@ return [
         'type_reference' => 'Typ de referentie :reference om door te gaan',
         'reference_mismatch' => 'De referentie komt niet overeen.',
         'partial' => 'Gedeeltelijk gewist',
-        'partial_help' => 'Sommige groepen zijn mislukt. Groepen met status Klaar blijven gewist. Los de oorzaak op en hervat: de uitvoering gaat alleen vooruit en kan veilig worden herhaald.',
+        'partial_help' => 'Sommige groepen zijn mislukt. Groepen met status Klaar blijven gewist. Los de oorzaak op en hervat: de uitvoering gaat alleen vooruit en kan veilig worden herhaald. Zijn er nieuwe rijen of is de gegevenskaart gewijzigd, lees dan het voorbeeld en bevestig het opnieuw: het vierogenprincipe geldt opnieuw.',
         'done' => 'Wissing voltooid',
         'done_help' => 'Alle groepen zijn afgehandeld. Back-ups, logs en externe systemen vallen niet onder dit hulpmiddel.',
         'stale' => 'De run geeft geen signaal meer',
@@ -207,6 +207,7 @@ return [
         'record_email_accepted' => 'E-mailadres van record overgenomen',
         'export_remove_failed' => 'Exportarchief kon niet worden verwijderd',
         'erasure_interrupted' => 'Verwijdering onderbroken',
+        'erasure_reconfirmed' => 'Wissen opnieuw bevestigd',
     ],
     'notifications' => [
         'failed' => 'De actie is mislukt',
@@ -367,5 +368,6 @@ return [
         'mismatch' => 'Gepland / verwerkt',
         'blockers' => 'Geblokkeerd door',
         'plan_changed' => 'Gegevenskaart gewijzigd',
+        'previous' => 'Eerdere uitvoeringen',
     ],
 ];

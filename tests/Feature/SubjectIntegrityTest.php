@@ -134,6 +134,8 @@ class SubjectIntegrityTest extends TestCase
             'erasure_confirmed_at' => null,
             'erasure_confirmed_by' => null,
         ])->save();
+        // The file Ada's run could not remove stays owed; the disk comes back so that this run can finish.
+        config(['filesystems.disks.vanished-disk' => ['driver' => 'local', 'root' => sys_get_temp_dir().'/gdpr-vanished-disk']]);
         $this->confirmAndRun($request);
 
         $this->assertSame(RequestStatus::Fulfilled, $request->refresh()->status);

@@ -163,7 +163,7 @@ return [
         'type_reference' => 'Type the reference :reference to continue',
         'reference_mismatch' => 'The reference does not match.',
         'partial' => 'Partially erased',
-        'partial_help' => 'Some groups failed. The groups marked Done stay erased. Fix the cause and resume: the run only continues forward and is safe to repeat.',
+        'partial_help' => 'Some groups failed. The groups marked Done stay erased. Fix the cause and resume: the run only continues forward and is safe to repeat. If new rows turned up or the data map changed, read the preview and confirm it again: four eyes applies again.',
         'done' => 'Erasure finished',
         'done_help' => 'Every group is settled. Backups, logs and external systems are not covered by this tool.',
         'stale' => 'The run has gone quiet',
@@ -207,6 +207,7 @@ return [
         'record_email_accepted' => 'Record\'s e-mail accepted',
         'export_remove_failed' => 'Export archive could not be removed',
         'erasure_interrupted' => 'Erasure interrupted',
+        'erasure_reconfirmed' => 'Erasure confirmed again',
     ],
     'notifications' => [
         'failed' => 'The action failed',
@@ -349,5 +350,6 @@ return [
         'mismatch' => 'Planned / handled',
         'blockers' => 'Blocked by',
         'plan_changed' => 'Data map changed',
+        'previous' => 'Earlier runs',
     ],
 ];

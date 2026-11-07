@@ -67,6 +67,33 @@ class GdprRequestStep extends Model
     }
 
     /**
+     * A new confirmation replaces the plan this step was done under, so it stops counting for that plan and runs again.
+     * What it did stays: the figures remain on the step and move into `earlier`, and files it still owes stay owed, since
+     * the rows that named them may be gone.
+     */
+    public function supersede(): void
+    {
+        $detail = $this->details();
+        $detail['rows_done'] = false;
+        unset($detail['handled']);
+        $detail['earlier'] = [...($detail['earlier'] ?? []), [
+            'status' => $this->status->value,
+            'matched' => $this->matched,
+            'changed' => $this->changed,
+            'trashed' => $this->trashed,
+            'error' => $this->error,
+            'finished_at' => $this->finished_at?->toIso8601String(),
+        ]];
+
+        $this->forceFill([
+            'status' => StepStatus::Pending,
+            'fingerprint' => null,
+            'error' => null,
+            'detail' => json_encode($detail, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+        ])->save();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function details(): array

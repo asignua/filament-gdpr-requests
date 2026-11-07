@@ -163,7 +163,7 @@ return [
         'type_reference' => 'Saisissez la référence :reference pour continuer',
         'reference_mismatch' => 'La référence ne correspond pas.',
         'partial' => 'Effacée partiellement',
-        'partial_help' => 'Certains groupes ont échoué. Les groupes marqués Terminé restent effacés. Corrigez la cause puis reprenez : l\'exécution ne va que de l\'avant et peut être répétée sans risque.',
+        'partial_help' => 'Certains groupes ont échoué. Les groupes marqués Terminé restent effacés. Corrigez la cause puis reprenez : l\'exécution ne va que de l\'avant et peut être répétée sans risque. Si de nouvelles lignes sont apparues ou si la carte des données a changé, relisez l\'aperçu et confirmez-le de nouveau : le contrôle à quatre yeux s\'applique à nouveau.',
         'done' => 'Effacement terminé',
         'done_help' => 'Tous les groupes sont réglés. Les sauvegardes, journaux et systèmes externes ne sont pas couverts par cet outil.',
         'stale' => 'L\'exécution ne donne plus signe de vie',
@@ -207,6 +207,7 @@ return [
         'record_email_accepted' => 'Adresse de l\'enregistrement acceptée',
         'export_remove_failed' => 'L\'archive d\'export n\'a pas pu être supprimée',
         'erasure_interrupted' => 'Effacement interrompu',
+        'erasure_reconfirmed' => 'Effacement confirmé à nouveau',
     ],
     'notifications' => [
         'failed' => 'L\'action a échoué',
@@ -367,5 +368,6 @@ return [
         'mismatch' => 'Prévu / traité',
         'blockers' => 'Bloqué par',
         'plan_changed' => 'Carte des données modifiée',
+        'previous' => 'Exécutions précédentes',
     ],
 ];

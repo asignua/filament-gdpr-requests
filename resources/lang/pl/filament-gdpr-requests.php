@@ -163,7 +163,7 @@ return [
         'type_reference' => 'Wpisz numer :reference, aby kontynuować',
         'reference_mismatch' => 'Numer się nie zgadza.',
         'partial' => 'Usunięto częściowo',
-        'partial_help' => 'Część grup się nie powiodła. Grupy oznaczone jako Wykonano pozostają usunięte. Usuń przyczynę i wznów: przebieg idzie tylko do przodu i można go bezpiecznie powtórzyć.',
+        'partial_help' => 'Część grup się nie powiodła. Grupy oznaczone jako Wykonano pozostają usunięte. Usuń przyczynę i wznów: przebieg idzie tylko do przodu i można go bezpiecznie powtórzyć. Jeśli pojawiły się nowe wiersze lub zmieniła się mapa danych, przeczytaj podgląd i potwierdź go ponownie: zasada czterech oczu obowiązuje znowu.',
         'done' => 'Usuwanie zakończone',
         'done_help' => 'Wszystkie grupy są załatwione. Kopie zapasowe, logi i systemy zewnętrzne nie są objęte tym narzędziem.',
         'stale' => 'Uruchomienie przestało się zgłaszać',
@@ -207,6 +207,7 @@ return [
         'record_email_accepted' => 'Przyjęto adres z rekordu',
         'export_remove_failed' => 'Nie udało się usunąć archiwum eksportu',
         'erasure_interrupted' => 'Usuwanie przerwane',
+        'erasure_reconfirmed' => 'Usunięcie potwierdzone ponownie',
     ],
     'notifications' => [
         'failed' => 'Działanie nie powiodło się',
@@ -367,5 +368,6 @@ return [
         'mismatch' => 'Zaplanowano / obsłużono',
         'blockers' => 'Zablokowane przez',
         'plan_changed' => 'Zmieniono mapę danych',
+        'previous' => 'Wcześniejsze uruchomienia',
     ],
 ];

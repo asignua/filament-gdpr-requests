@@ -163,7 +163,7 @@ return [
         'type_reference' => 'Digitate il riferimento :reference per continuare',
         'reference_mismatch' => 'Il riferimento non corrisponde.',
         'partial' => 'Cancellata in parte',
-        'partial_help' => 'Alcuni gruppi non sono riusciti. I gruppi contrassegnati Fatto restano cancellati. Rimuovete la causa e riprendete: l\'esecuzione va solo avanti ed è ripetibile in sicurezza.',
+        'partial_help' => 'Alcuni gruppi non sono riusciti. I gruppi contrassegnati Fatto restano cancellati. Rimuovete la causa e riprendete: l\'esecuzione va solo avanti ed è ripetibile in sicurezza. Se sono comparse nuove righe o la mappa dei dati è cambiata, leggete l\'anteprima e confermatela di nuovo: il principio dei quattro occhi vale di nuovo.',
         'done' => 'Cancellazione terminata',
         'done_help' => 'Tutti i gruppi sono risolti. Backup, log e sistemi esterni non sono coperti da questo strumento.',
         'stale' => 'L\'esecuzione non dà più segni di vita',
@@ -207,6 +207,7 @@ return [
         'record_email_accepted' => 'E-mail del record accettata',
         'export_remove_failed' => 'Impossibile rimuovere l\'archivio di esportazione',
         'erasure_interrupted' => 'Cancellazione interrotta',
+        'erasure_reconfirmed' => 'Cancellazione confermata di nuovo',
     ],
     'notifications' => [
         'failed' => 'L\'azione non è riuscita',
@@ -367,5 +368,6 @@ return [
         'mismatch' => 'Previsto / trattato',
         'blockers' => 'Bloccato da',
         'plan_changed' => 'Mappa dei dati modificata',
+        'previous' => 'Esecuzioni precedenti',
     ],
 ];

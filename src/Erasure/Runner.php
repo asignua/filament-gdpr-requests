@@ -107,6 +107,9 @@ final class Runner
 
         $strategy = $group->entry->getErase();
         $result = ['matched' => $group->matched, 'changed' => 0, 'trashed' => $group->trashed, 'files' => []];
+        // Set only when an earlier confirmation ran this group: the rows that named these files may be gone.
+        $owed = $step->exists ? $step->pendingFiles() : [];
+        $earlier = $step->exists ? ($step->details()['earlier'] ?? []) : [];
         $status = StepStatus::Done;
         $note = null;
 
@@ -124,23 +127,26 @@ final class Runner
             }
         }
 
+        $files = [...$owed, ...$result['files']];
+
+        // A rerun adds to the report, it does not replace it: a row deleted in an earlier round is gone from the new count.
         $step->forceFill([
             'label' => $group->label(),
             'strategy' => $group->action,
             'status' => $status,
-            'matched' => $result['matched'],
-            'changed' => $result['changed'],
-            'trashed' => $result['trashed'],
+            'matched' => $strategy instanceof Delete ? (int) $step->matched + $result['matched'] : max((int) $step->matched, $result['matched']),
+            'changed' => (int) $step->changed + $result['changed'],
+            'trashed' => max((int) $step->trashed, $result['trashed']),
             'attempts' => $step->attempts + 1,
             'error' => null,
             'finished_at' => now(),
             'fingerprint' => $confirmed,
             'detail' => $this->encode([
                 'rows_done' => true,
-                'files_pending' => $result['files'],
+                'files_pending' => $files,
                 // What this run did, for the last look; not comparable when another group shares the rows.
                 'handled' => $plan->sharesRowsWithADeletion($group) ? null : ($strategy instanceof Delete ? $result['changed'] : $result['matched']),
-            ] + ($note ?? [])),
+            ] + ($note ?? []) + ($earlier === [] ? [] : ['earlier' => $earlier])),
         ])->save();
 
         RequestLog::record($locked, 'erasure_group_done', null, [
@@ -150,7 +156,7 @@ final class Runner
             'changed' => $result['changed'],
         ]);
 
-        return $result['files'];
+        return $files;
     }
 
     /**

@@ -163,7 +163,7 @@ return [
         'type_reference' => 'Geben Sie die Referenz :reference ein, um fortzufahren',
         'reference_mismatch' => 'Die Referenz stimmt nicht überein.',
         'partial' => 'Teilweise gelöscht',
-        'partial_help' => 'Einige Gruppen sind fehlgeschlagen. Gruppen mit Status Erledigt bleiben gelöscht. Beheben Sie die Ursache und setzen Sie fort: Der Lauf geht nur vorwärts und ist wiederholbar.',
+        'partial_help' => 'Einige Gruppen sind fehlgeschlagen. Gruppen mit Status Erledigt bleiben gelöscht. Beheben Sie die Ursache und setzen Sie fort: Der Lauf geht nur vorwärts und ist wiederholbar. Sind neue Zeilen aufgetaucht oder hat sich die Datenkarte geändert, lesen Sie die Vorschau und bestätigen Sie sie erneut: Das Vier-Augen-Prinzip gilt wieder.',
         'done' => 'Löschung abgeschlossen',
         'done_help' => 'Alle Gruppen sind erledigt. Backups, Logs und externe Systeme deckt dieses Werkzeug nicht ab.',
         'stale' => 'Der Lauf meldet sich nicht mehr',
@@ -207,6 +207,7 @@ return [
         'record_email_accepted' => 'E-Mail des Datensatzes übernommen',
         'export_remove_failed' => 'Exportarchiv konnte nicht entfernt werden',
         'erasure_interrupted' => 'Löschung unterbrochen',
+        'erasure_reconfirmed' => 'Löschung erneut bestätigt',
     ],
     'notifications' => [
         'failed' => 'Die Aktion ist fehlgeschlagen',
@@ -367,5 +368,6 @@ return [
         'mismatch' => 'Geplant / bearbeitet',
         'blockers' => 'Blockiert durch',
         'plan_changed' => 'Datenkarte geändert',
+        'previous' => 'Frühere Läufe',
     ],
 ];

@@ -273,6 +273,11 @@ final class RequestService
             throw GdprException::translated('reason_required');
         }
 
+        // Rows are gone: a request confirmed again after a partial run can only go forward, like the partial run itself.
+        if ($request->steps()->exists()) {
+            throw InvalidTransition::translated('cannot_refuse');
+        }
+
         $this->transition($request, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::ErasureConfirmed], [
             'status' => RequestStatus::Refused->value,
             'refused_at' => now(),
