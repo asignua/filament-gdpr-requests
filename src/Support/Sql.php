@@ -7,6 +7,7 @@ namespace Asignua\FilamentGdprRequests\Support;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Expression;
 
 /**
  * The address comparison in the database. SQL's TRIM strips spaces and nothing else, and SQLite's LOWER knows only
@@ -47,16 +48,18 @@ final class Sql
     {
         $base = $query->getQuery();
         $column = $base->getGrammar()->wrap($qualifiedColumn);
-        $connection = $base->getConnection();
+        $connection = $query->getModel()->getConnection();
 
-        match ($connection->getDriverName()) {
-            'sqlite' => $query->whereRaw(self::sqliteFunction($connection).'('.$column.') = ?', [$normalizedValue]),
+        [$sql, $bindings] = match ($connection->getDriverName()) {
+            'sqlite' => [self::sqliteFunction($connection).'('.$column.') = ?', [$normalizedValue]],
             // Postgres text cannot hold NUL, not even as an argument.
-            'pgsql' => $query->whereRaw('LOWER(BTRIM(CAST('.$column.' AS TEXT), ?)) = ?', [self::characters(), $normalizedValue]),
+            'pgsql' => ['LOWER(BTRIM(CAST('.$column.' AS TEXT), ?)) = ?', [self::characters(), $normalizedValue]],
             // CONVERT first: on a latin1 column the expression would otherwise run without Unicode.
-            'mysql', 'mariadb' => $query->whereRaw("LOWER(REGEXP_REPLACE(CONVERT({$column} USING utf8mb4), ?, '')) = ?", ['\A['.self::characterClass().']+|['.self::characterClass().']+\z', $normalizedValue]),
-            default => $query->whereRaw('LOWER(TRIM('.$column.')) = ?', [$normalizedValue]),
+            'mysql', 'mariadb' => ["LOWER(REGEXP_REPLACE(CONVERT({$column} USING utf8mb4), ?, '')) = ?", ['\A['.self::characterClass().']+|['.self::characterClass().']+\z', $normalizedValue]],
+            default => ['LOWER(TRIM('.$column.')) = ?', [$normalizedValue]],
         };
+
+        $query->whereRaw(new Expression($sql), $bindings); // @phpstan-ignore argument.type
     }
 
     private static function characters(): string
