@@ -7,6 +7,7 @@ namespace Asignua\FilamentGdprRequests\DataMap;
 use Asignua\FilamentGdprRequests\Erasure\Blocker;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
+use Asignua\FilamentGdprRequests\Support\Sql;
 use Illuminate\Database\QueryException;
 
 /**
@@ -32,8 +33,9 @@ final class SubjectResolver
 
         $claimed = Pseudonym::normalizeEmail($request->subject_email);
 
+        // The record no longer speaks for itself, but an address that has since become someone else's still finds their rows.
         if ($this->rootAlreadyErased($request, $root)) {
-            return new ResolvedSubject(new Subject($root, $request->subject_id, $claimed));
+            return new ResolvedSubject(new Subject($root, $request->subject_id, $claimed), $this->sharedAddress($root, $request->subject_id, $claimed));
         }
 
         $row = $this->rootRow($root, $request->subject_id);
@@ -46,7 +48,7 @@ final class SubjectResolver
 
         $column = $root->getEmailColumn();
         $email = $column === null ? null : Pseudonym::normalizeEmail(is_scalar($row[$column] ?? null) ? (string) $row[$column] : null);
-        $blockers = [];
+        $blockers = $this->sharedAddress($root, $request->subject_id, $email);
 
         if ($claimed !== null && $email !== null && $claimed !== $email) {
             $blockers[] = new Blocker('subject_email_mismatch');
@@ -61,6 +63,36 @@ final class SubjectResolver
         }
 
         return new ResolvedSubject(new Subject($root, $request->subject_id, $email), $blockers);
+    }
+
+    /**
+     * An address finds rows only while it stands for one person: with two records behind it, each one's erasure would take
+     * the other's rows and each one's export would hold them. Soft-deleted records count, they still own their rows.
+     *
+     * @return list<Blocker>
+     */
+    private function sharedAddress(PersonalData $root, string $id, ?string $email): array
+    {
+        $column = $root->getEmailColumn();
+
+        if ($column === null || $email === null) {
+            return [];
+        }
+
+        $query = $root->model::query()->withoutGlobalScopes();
+        $table = $query->getModel()->getTable();
+        $key = $query->getModel()->getKeyName();
+        Sql::whereNormalizedEquals($query, $table.'.'.$column, $email);
+
+        try {
+            $rows = $query->toBase()->select([$table.'.'.$key, $table.'.'.$column])->get();
+        } catch (QueryException) {
+            return []; // A missing table has its own blocker in the preview.
+        }
+
+        $others = $rows->filter(static fn (object $row): bool => (string) $row->{$key} !== $id && Pseudonym::normalizeEmail((string) $row->{$column}) === $email)->count();
+
+        return $others === 0 ? [] : [new Blocker('subject_email_shared', ['rows' => $others + 1])];
     }
 
     /**

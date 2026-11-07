@@ -296,6 +296,7 @@ return [
         'subject_email_unknown' => ':entry finds rows by e-mail, but the linked record offers no address to match on. Declare subject(email: ...) in the data map and fill it in on the record.',
         'closure_order' => 'A custom match on :table reads :other, which this run changes, and the foreign keys force :other to go first. Its rows could not be found any more. Match the rows another way.',
         'rule_not_repeatable' => 'The callback on :table.:column changes its own output, so a finished row can never be told from an unfinished one. A rule must leave its own result alone.',
+        'subject_email_shared' => ':rows records in this table have this address, so it cannot tell whose rows are whose. Correct the records first; nothing is matched by it until then.',
     ],
     'requester_mail' => [
         'received' => ['subject' => 'We received your request (:reference)', 'line' => 'We received your data request. Your reference is :reference. We will answer by :date.'],

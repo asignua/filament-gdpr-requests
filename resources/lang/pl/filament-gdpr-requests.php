@@ -296,6 +296,7 @@ return [
         'subject_email_unknown' => ':entry wyszukuje wiersze po adresie e-mail, ale powiązany rekord nie podaje adresu. Zadeklaruj subject(email: ...) w mapie danych i uzupełnij go w rekordzie.',
         'closure_order' => 'Własne dopasowanie w :table czyta :other, którą to uruchomienie zmienia, a klucze obce wymagają, by :other poszła pierwsza. Jego wierszy nie dałoby się już znaleźć. Dopasuj wiersze inaczej.',
         'rule_not_repeatable' => 'Callback dla :table.:column zmienia własny wynik, więc gotowego wiersza nie da się odróżnić od niegotowego. Reguła musi zostawiać swój wynik bez zmian.',
+        'subject_email_shared' => 'Rekordów z tym adresem w tabeli: :rows, więc nie wiadomo, czyje są wiersze. Najpierw popraw rekordy; do tego czasu nic nie jest po nim dopasowywane.',
     ],
     'requester_mail' => [
         'received' => [

@@ -53,7 +53,8 @@ final class Pseudonym
     }
 
     /**
-     * Trim and lowercase, nothing cleverer: no plus-address stripping, no dot folding.
+     * Trim and lowercase, nothing cleverer: no plus-address stripping, no dot folding. Trim means every white space and
+     * invisible character that a paste leaves at the ends (see Sql::TRIMMED), and the SQL side strips the same set.
      */
     public static function normalizeEmail(?string $email): ?string
     {
@@ -61,7 +62,8 @@ final class Pseudonym
             return null;
         }
 
-        $email = mb_strtolower(trim($email));
+        $edges = '['.Sql::characterClass().']+';
+        $email = mb_strtolower(preg_replace('/\A'.$edges.'|'.$edges.'\z/u', '', $email) ?? trim($email));
 
         return $email === '' ? null : $email;
     }

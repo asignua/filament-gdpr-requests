@@ -296,6 +296,7 @@ return [
         'subject_email_unknown' => ':entry vindt rijen op e-mail, maar het gekoppelde record biedt geen adres. Declareer subject(email: ...) in de gegevenskaart en vul het in op het record.',
         'closure_order' => 'Een eigen zoekopdracht op :table leest :other, dat deze uitvoering wijzigt, en de refererende sleutels dwingen af dat :other eerst komt. De rijen zouden niet meer te vinden zijn. Zoek de rijen op een andere manier.',
         'rule_not_repeatable' => 'De callback op :table.:column wijzigt zijn eigen resultaat, waardoor een afgeronde rij niet te onderscheiden is van een onafgeronde. Een regel moet zijn eigen resultaat met rust laten.',
+        'subject_email_shared' => ':rows records in deze tabel hebben dit adres, dus daaruit blijkt niet van wie welke rijen zijn. Corrigeer eerst de records; tot die tijd wordt er niets mee gezocht.',
     ],
     'requester_mail' => [
         'received' => [

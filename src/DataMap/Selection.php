@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\DataMap;
 
+use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Asignua\FilamentGdprRequests\Support\Sql;
 use Closure;
 use Generator;
@@ -125,7 +126,7 @@ final class Selection
             PersonalData::MATCH_SUBJECT => (string) ($row[$this->keyName()] ?? '') === $subject->id,
             PersonalData::MATCH_COLUMN => (string) ($row[(string) $this->entry->getMatchColumn()] ?? '') === $subject->id,
             PersonalData::MATCH_EMAIL => $subject->email !== null
-                && mb_strtolower(trim((string) ($row[(string) $this->entry->getMatchColumn()] ?? ''))) === $subject->email,
+                && Pseudonym::normalizeEmail((string) ($row[(string) $this->entry->getMatchColumn()] ?? '')) === $subject->email,
             default => true,
         };
     }

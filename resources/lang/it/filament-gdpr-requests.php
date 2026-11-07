@@ -296,6 +296,7 @@ return [
         'subject_email_unknown' => ':entry trova le righe per e-mail, ma il record collegato non offre alcun indirizzo. Dichiara subject(email: ...) nella mappa dei dati e compilalo nel record.',
         'closure_order' => 'Una ricerca personalizzata su :table legge :other, che questa esecuzione modifica, e le chiavi esterne impongono di trattare prima :other. Le sue righe non si troverebbero più. Cerca le righe in un altro modo.',
         'rule_not_repeatable' => 'Il callback su :table.:column modifica il proprio risultato, quindi una riga finita non si distingue da una da fare. Una regola deve lasciare intatto il proprio risultato.',
+        'subject_email_shared' => ':rows record di questa tabella hanno questo indirizzo, quindi non si può dire di chi siano le righe. Correggi prima i record; fino ad allora non si cerca nulla con esso.',
     ],
     'requester_mail' => [
         'received' => [

@@ -296,6 +296,7 @@ return [
         'subject_email_unknown' => ':entry busca filas por correo, pero el registro vinculado no ofrece ninguna dirección. Declare subject(email: ...) en el mapa de datos y complétela en el registro.',
         'closure_order' => 'Una búsqueda propia en :table lee :other, que esta ejecución cambia, y las claves foráneas obligan a procesar :other primero. Sus filas ya no podrían encontrarse. Busque las filas de otro modo.',
         'rule_not_repeatable' => 'El callback de :table.:column cambia su propio resultado, así que una fila terminada no se distingue de una pendiente. Una regla debe dejar intacto su resultado.',
+        'subject_email_shared' => ':rows registros de esta tabla tienen esta dirección, así que no indica de quién son las filas. Corrija primero los registros; hasta entonces no se busca nada por ella.',
     ],
     'requester_mail' => [
         'received' => [

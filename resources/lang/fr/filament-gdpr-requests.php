@@ -296,6 +296,7 @@ return [
         'subject_email_unknown' => ':entry trouve les lignes par e-mail, mais l\'enregistrement lié n\'offre aucune adresse. Déclarez subject(email: ...) dans la carte des données et renseignez-la sur l\'enregistrement.',
         'closure_order' => 'Une recherche personnalisée sur :table lit :other, que cette exécution modifie, et les clés étrangères imposent de traiter :other en premier. Ses lignes seraient introuvables. Recherchez-les autrement.',
         'rule_not_repeatable' => 'Le callback sur :table.:column modifie son propre résultat : une ligne terminée ne se distingue plus d\'une ligne non traitée. Une règle doit laisser son résultat intact.',
+        'subject_email_shared' => ':rows enregistrements de cette table ont cette adresse : elle ne permet pas de savoir à qui sont les lignes. Corrigez d\'abord les enregistrements ; d\'ici là, rien n\'est recherché par elle.',
     ],
     'requester_mail' => [
         'received' => [

@@ -296,6 +296,7 @@ return [
         'subject_email_unknown' => ':entry findet Zeilen per E-Mail, aber der verknüpfte Datensatz bietet keine Adresse dafür. Deklarieren Sie subject(email: ...) in der Datenkarte und tragen Sie sie im Datensatz ein.',
         'closure_order' => 'Eine eigene Suche in :table liest :other, das dieser Lauf ändert, und die Fremdschlüssel verlangen, dass :other zuerst an der Reihe ist. Ihre Zeilen wären nicht mehr auffindbar. Suchen Sie die Zeilen auf andere Weise.',
         'rule_not_repeatable' => 'Der Callback für :table.:column ändert sein eigenes Ergebnis, sodass eine fertige Zeile nicht von einer unfertigen zu unterscheiden ist. Eine Regel muss ihr eigenes Ergebnis unverändert lassen.',
+        'subject_email_shared' => ':rows Datensätze dieser Tabelle haben diese Adresse, sie lässt also nicht erkennen, wem welche Zeilen gehören. Korrigieren Sie zuerst die Datensätze; bis dahin wird nichts darüber gefunden.',
     ],
     'requester_mail' => [
         'received' => [
