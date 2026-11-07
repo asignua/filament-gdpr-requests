@@ -24,6 +24,28 @@ class RuleTest extends TestCase
         $this->assertNull($rule->apply(null, 'customers', 'email', 1, []));
     }
 
+    public function test_a_value_that_only_looks_like_a_hash_is_still_hashed(): void
+    {
+        $rule = Rule::hash();
+
+        foreach (['h1$Ada Lovelace', 'h1$', 'h1$ABCDEF0123456789ABCDEF0123456789', 'h1$'.str_repeat('a', 31), 'h1$'.str_repeat('a', 33), 'h1$'.str_repeat('a', 32)."\n"] as $value) {
+            $result = $rule->apply($value, 'customers', 'name', 1, []);
+
+            $this->assertNotSame($value, $result, $value);
+            $this->assertMatchesRegularExpression('/\Ah1\$[0-9a-f]{32}\z/', $result);
+        }
+    }
+
+    public function test_hash_recognises_its_own_output_at_any_declared_length(): void
+    {
+        foreach ([4, 8, 16, 32, 64, 100] as $length) {
+            $rule = Rule::hash($length);
+            $once = $rule->apply('Ada', 'customers', 'name', 1, []);
+
+            $this->assertSame($once, $rule->apply($once, 'customers', 'name', 1, []), (string) $length);
+        }
+    }
+
     public function test_the_token_is_unique_per_row_and_the_same_on_every_run(): void
     {
         $rule = Rule::uniqueToken('erased-', '@x.invalid');

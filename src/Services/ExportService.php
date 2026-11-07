@@ -14,10 +14,10 @@ use Asignua\FilamentGdprRequests\Jobs\BuildExportJob;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Models\GdprRequestExport;
 use Asignua\FilamentGdprRequests\Support\Environment;
+use Asignua\FilamentGdprRequests\Support\Files;
 use Asignua\FilamentGdprRequests\Support\Gates;
 use Asignua\FilamentGdprRequests\Support\PrivateDisk;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Throwable;
@@ -98,7 +98,7 @@ final class ExportService
             ]);
 
             if ($published !== 1) {
-                $disk->delete($path);
+                Files::remove(PrivateDisk::name(), $path);
 
                 return;
             }
@@ -166,16 +166,46 @@ final class ExportService
     }
 
     /**
-     * @return bool false when the archive is still there; the row then stays as it is, and a later prune retries
+     * Every archive of the person this request is about, across their requests: an access request's archive is a
+     * copy of what the erasure removed.
+     *
+     * @return int how many archives could not be removed
+     */
+    public function removeAllForSubject(GdprRequest $request): int
+    {
+        if (!$request->hasSubject()) {
+            return $this->removeAllFor($request);
+        }
+
+        $owners = GdprRequest::query()->select('id')->where(static function ($query) use ($request): void {
+            $query->where(['subject_model' => $request->subject_model, 'subject_id' => $request->subject_id]);
+
+            if ($request->pseudonym !== null) {
+                $query->orWhere('pseudonym', $request->pseudonym);
+            }
+        });
+
+        $failed = 0;
+
+        foreach (GdprRequestExport::query()->with('request')->whereNull('removed_at')->whereIn('request_id', $owners)->get() as $export) {
+            if (!$this->remove($export)) {
+                $failed++;
+            }
+        }
+
+        return $failed;
+    }
+
+    /**
+     * @return bool false when the archive is still there; the row then stays as it is, on the log, and a later prune
+     *              retries
      */
     public function remove(GdprRequestExport $export): bool
     {
-        if ($export->disk !== null && $export->path !== null) {
-            try {
-                Storage::disk($export->disk)->delete($export->path);
-            } catch (Throwable) {
-                return false;
-            }
+        if ($export->disk !== null && $export->path !== null && !Files::remove($export->disk, $export->path)) {
+            RequestLog::record($export->owner(), 'export_remove_failed', null, ['export' => $export->ulid]);
+
+            return false;
         }
 
         $export->forceFill(['status' => GdprRequestExport::REMOVED, 'removed_at' => now(), 'path' => null])->save();

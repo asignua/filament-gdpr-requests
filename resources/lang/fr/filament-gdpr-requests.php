@@ -166,6 +166,8 @@ return [
         'partial_help' => 'Certains groupes ont échoué. Les groupes marqués Terminé restent effacés. Corrigez la cause puis reprenez : l\'exécution ne va que de l\'avant et peut être répétée sans risque.',
         'done' => 'Effacement terminé',
         'done_help' => 'Tous les groupes sont réglés. Les sauvegardes, journaux et systèmes externes ne sont pas couverts par cet outil.',
+        'stale' => 'L\'exécution ne donne plus signe de vie',
+        'stale_help' => 'Aucun worker ne s\'est manifesté depuis plus de :minutes minutes, il a pu être arrêté. Reprenez : les groupes terminés ne sont pas répétés.',
     ],
     'report' => [
         'counts' => ':matched trouvées, :changed modifiées, :trashed en suppression logique',
@@ -194,6 +196,8 @@ return [
         'export_link_issued' => 'Lien de téléchargement émis',
         'export_downloaded' => 'Export téléchargé',
         'record_email_accepted' => 'Adresse de l\'enregistrement acceptée',
+        'export_remove_failed' => 'L\'archive d\'export n\'a pas pu être supprimée',
+        'erasure_interrupted' => 'Effacement interrompu',
     ],
     'notifications' => [
         'failed' => 'L\'action a échoué',
@@ -250,6 +254,7 @@ return [
         'export_blocked' => 'L\'export ne peut pas être créé : :reason',
         'export_not_removed' => ':count archive(s) d\'export n\'ont pas pu être supprimées : rien n\'a été modifié. Réessayez.',
         'record_email_unavailable' => 'L\'enregistrement lié n\'a pas d\'adresse e-mail à reprendre.',
+        'retention_files_left' => ':count fichier(s) n\'ont pas pu être supprimés ; leurs chemins figurent dans le résumé de cette exécution.',
     ],
     'blocker' => [
         'no_matcher' => 'Une entrée ne dit pas comment retrouver les lignes de la personne (subject(), matchedBy(), matchedByEmail() ou matchedUsing()).',

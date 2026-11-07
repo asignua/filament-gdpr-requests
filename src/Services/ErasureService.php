@@ -20,6 +20,7 @@ use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * The irreversible path: preview -> confirm -> run, three separate calls, each with its own checks. Nothing here
@@ -27,7 +28,7 @@ use Illuminate\Support\Facades\DB;
  */
 final class ErasureService
 {
-    public function __construct(private readonly Planner $planner) {}
+    public function __construct(private readonly Planner $planner, private readonly ExportService $exports) {}
 
     public function plan(GdprRequest $request): ErasurePlan
     {
@@ -89,7 +90,7 @@ final class ErasureService
         $this->assertEligible($request);
 
         $fresh = GdprRequest::query()->whereKey($request->getKey())->firstOrFail();
-        $resuming = $fresh->status === RequestStatus::Partial || $this->isStale($fresh);
+        $resuming = $fresh->status === RequestStatus::Partial || $fresh->isStaleRun();
 
         if ($fresh->status === RequestStatus::Erasing && !$resuming) {
             throw AlreadyRunning::translated('already_running');
@@ -130,7 +131,7 @@ final class ErasureService
         }
 
         // The atomic claim: only one caller changes the status, so two simultaneous "Run" clicks cannot both start.
-        $staleBefore = now()->subMinutes((int) config('filament-gdpr-requests.erasure.stale_run_minutes', 30));
+        $staleBefore = now()->subMinutes(GdprRequest::staleRunMinutes());
         $claimed = GdprRequest::query()->whereKey($fresh->getKey())
             ->where(function ($query) use ($staleBefore): void {
                 $query->whereIn('status', [RequestStatus::ErasureConfirmed->value, RequestStatus::Partial->value])
@@ -181,16 +182,17 @@ final class ErasureService
     }
 
     /**
-     * Called by the last job: fulfilled only if every planned group is settled.
+     * Called by the last job: fulfilled only if every planned group is finished under this plan and no archive of the
+     * person is left. The requester is told after the commit: a mail server has no say in whether data was erased.
      */
     public function finalize(int $requestId): void
     {
-        DB::transaction(function () use ($requestId): void {
+        $fulfilled = DB::transaction(function () use ($requestId): ?GdprRequest {
             /** @var GdprRequest $request */
             $request = GdprRequest::query()->whereKey($requestId)->lockForUpdate()->firstOrFail();
 
             if ($request->status !== RequestStatus::Erasing) {
-                return;
+                return null;
             }
 
             $planned = $request->erasure_plan['order'] ?? [];
@@ -199,18 +201,41 @@ final class ErasureService
 
             // Finished means finished under THIS plan, files included; a step of another person never counts.
             $open = array_filter($planned, static fn (string $key): bool => !($steps->get($key)?->isComplete($confirmed) ?? false));
+            $archives = $planned !== [] && $open === [] ? $this->exports->removeAllForSubject($request) : 0;
 
-            if ($open !== []) {
+            if ($planned === [] || $open !== [] || $archives > 0) {
                 $request->forceFill(['status' => RequestStatus::Partial])->save();
-                RequestLog::record($request, 'erasure_partial', null, ['open' => array_values($open)]);
+                RequestLog::record($request, 'erasure_partial', null, ['open' => array_values($open), 'archives' => $archives]);
 
-                return;
+                return null;
             }
 
             $request->forceFill(['status' => RequestStatus::Fulfilled, 'erasure_finished_at' => now()])->save();
             RequestLog::record($request, 'erasure_finished', null, ['groups' => count($planned)]);
-            RequesterMail::send($request, 'completed');
+
+            return $request;
         });
+
+        if ($fulfilled !== null) {
+            try {
+                RequesterMail::send($fulfilled, 'completed');
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+    }
+
+    /**
+     * The last job died (killed worker, timeout): a run that nobody finishes must not read `erasing` for ever.
+     */
+    public function interrupted(int $requestId, ?Throwable $e): void
+    {
+        $moved = GdprRequest::query()->whereKey($requestId)->where('status', RequestStatus::Erasing->value)
+            ->update(['status' => RequestStatus::Partial->value]);
+
+        if ($moved === 1) {
+            RequestLog::record(GdprRequest::query()->findOrFail($requestId), 'erasure_interrupted', null, ['reason' => $e === null ? null : class_basename($e)]);
+        }
     }
 
     /**
@@ -241,12 +266,5 @@ final class ErasureService
         if (!$request->isVerified()) {
             throw InvalidTransition::translated('not_verified');
         }
-    }
-
-    private function isStale(GdprRequest $request): bool
-    {
-        return $request->status === RequestStatus::Erasing
-            && ($request->erasure_heartbeat_at === null
-                || $request->erasure_heartbeat_at->lt(now()->subMinutes((int) config('filament-gdpr-requests.erasure.stale_run_minutes', 30))));
     }
 }

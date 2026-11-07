@@ -166,6 +166,8 @@ return [
         'partial_help' => 'Einige Gruppen sind fehlgeschlagen. Gruppen mit Status Erledigt bleiben gelöscht. Beheben Sie die Ursache und setzen Sie fort: Der Lauf geht nur vorwärts und ist wiederholbar.',
         'done' => 'Löschung abgeschlossen',
         'done_help' => 'Alle Gruppen sind erledigt. Backups, Logs und externe Systeme deckt dieses Werkzeug nicht ab.',
+        'stale' => 'Der Lauf meldet sich nicht mehr',
+        'stale_help' => 'Seit mehr als :minutes Minuten hat sich kein Worker gemeldet, er wurde möglicherweise beendet. Setzen Sie fort: Fertige Gruppen werden nicht wiederholt.',
     ],
     'report' => [
         'counts' => ':matched gefunden, :changed geändert, :trashed soft-gelöscht',
@@ -194,6 +196,8 @@ return [
         'export_link_issued' => 'Download-Link ausgestellt',
         'export_downloaded' => 'Export heruntergeladen',
         'record_email_accepted' => 'E-Mail des Datensatzes übernommen',
+        'export_remove_failed' => 'Exportarchiv konnte nicht entfernt werden',
+        'erasure_interrupted' => 'Löschung unterbrochen',
     ],
     'notifications' => [
         'failed' => 'Die Aktion ist fehlgeschlagen',
@@ -250,6 +254,7 @@ return [
         'export_blocked' => 'Der Export kann nicht erstellt werden: :reason',
         'export_not_removed' => ':count Exportarchiv(e) konnten nicht entfernt werden, daher wurde nichts geändert. Versuchen Sie es erneut.',
         'record_email_unavailable' => 'Der verknüpfte Datensatz hat keine E-Mail-Adresse, die übernommen werden kann.',
+        'retention_files_left' => ':count Datei(en) konnten nicht entfernt werden; die Pfade stehen in der Zusammenfassung dieses Laufs.',
     ],
     'blocker' => [
         'no_matcher' => 'Ein Eintrag sagt nicht, wie die Zeilen der Person zu finden sind (subject(), matchedBy(), matchedByEmail() oder matchedUsing()).',

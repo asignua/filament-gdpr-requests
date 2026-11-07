@@ -12,6 +12,8 @@ use Asignua\FilamentGdprRequests\Erasure\Applier;
 use Asignua\FilamentGdprRequests\Erasure\Failures;
 use Asignua\FilamentGdprRequests\Erasure\Planner;
 use Asignua\FilamentGdprRequests\Models\GdprRun;
+use Asignua\FilamentGdprRequests\Support\Files;
+use Asignua\FilamentGdprRequests\Support\Lang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -113,7 +115,15 @@ final class RetentionRunner
             $result = DB::transaction(fn (): array => $this->applier->apply($selection, $action, (int) config('filament-gdpr-requests.erasure.chunk', 200)));
             $row['changed'] = $result['changed'];
             $row['status'] = 'applied';
-            $this->removeFiles($result['files']);
+            $left = $this->removeFiles($result['files']);
+
+            // The row went but its file did not: that is no success. The paths are in the run's summary, since the
+            // row that named them no longer exists and a later run cannot find them again.
+            if ($left !== []) {
+                $row['status'] = 'failed';
+                $row['blockers'] = [Lang::t('errors.retention_files_left', ['count' => count($left)])];
+                $row['files_pending'] = $left;
+            }
         } catch (Throwable $e) {
             $row['status'] = 'failed';
             $row['blockers'] = [Failures::describe($e)];
@@ -124,15 +134,11 @@ final class RetentionRunner
 
     /**
      * @param list<array{disk: string, path: string}> $files
+     *
+     * @return list<array{disk: string, path: string}> the files that are still there
      */
-    private function removeFiles(array $files): void
+    private function removeFiles(array $files): array
     {
-        foreach ($files as $file) {
-            try {
-                \Illuminate\Support\Facades\Storage::disk($file['disk'])->delete($file['path']);
-            } catch (Throwable $e) {
-                report($e);
-            }
-        }
+        return array_values(array_filter($files, static fn (array $file): bool => !Files::remove($file['disk'], $file['path'])));
     }
 }

@@ -249,11 +249,11 @@ final class RequestService
     {
         Gates::authorize(Gates::MANAGE, $actor);
 
-        if ($request->type->allowsErasure() || $request->status !== RequestStatus::InProgress) {
+        if ($request->type->allowsErasure()) {
             throw InvalidTransition::translated('cannot_complete');
         }
 
-        $request->forceFill(['status' => RequestStatus::Fulfilled])->save();
+        $this->transition($request, [RequestStatus::InProgress], ['status' => RequestStatus::Fulfilled->value], 'cannot_complete');
         RequestLog::record($request, 'completed', $actor);
         RequesterMail::send($request, 'completed');
 
@@ -264,22 +264,18 @@ final class RequestService
     {
         Gates::authorize(Gates::MANAGE, $actor);
 
-        if (!in_array($request->status, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::ErasureConfirmed], true)) {
-            throw InvalidTransition::translated('cannot_refuse');
-        }
-
         if (trim($reason) === '') {
             throw GdprException::translated('reason_required');
         }
 
-        $request->forceFill([
-            'status' => RequestStatus::Refused,
+        $this->transition($request, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::ErasureConfirmed], [
+            'status' => RequestStatus::Refused->value,
             'refused_at' => now(),
             'refusal_reason' => trim($reason),
             'erasure_confirmed_at' => null,
             'erasure_confirmed_by' => null,
             'erasure_plan' => null,
-        ])->save();
+        ], 'cannot_refuse');
 
         RequestLog::record($request, 'refused', $actor);
         RequesterMail::send($request, 'refused');
@@ -295,18 +291,14 @@ final class RequestService
     {
         Gates::authorize(Gates::MANAGE, $actor);
 
-        if (!in_array($request->status, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::Fulfilled, RequestStatus::Refused], true)) {
-            throw InvalidTransition::translated('cannot_close');
-        }
-
         DB::transaction(function () use ($request, $actor): void {
-            $request->forceFill([
-                'status' => RequestStatus::Closed,
+            $this->transition($request, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::Fulfilled, RequestStatus::Refused], [
+                'status' => RequestStatus::Closed->value,
                 'closed_at' => now(),
                 'subject_model' => null,
                 'subject_id' => null,
                 'erasure_plan' => null,
-            ])->save();
+            ], 'cannot_close');
 
             RequestLog::record($request, 'closed', $actor);
         });
@@ -365,6 +357,28 @@ final class RequestService
     private function emailPseudonymFields(string $email): array
     {
         return ['email_pseudonym' => Pseudonym::forEmail($email), 'pseudonym_key_version' => Pseudonym::currentVersion()];
+    }
+
+    /**
+     * A status change decided by the database, not by the model in hand: that model may be minutes old (an open page)
+     * and a stale `in_progress` must not overwrite the `erasing` a run has written since.
+     *
+     * @param list<RequestStatus>  $from
+     * @param array<string, mixed> $attributes
+     */
+    private function transition(GdprRequest $request, array $from, array $attributes, string $error): void
+    {
+        $changed = GdprRequest::query()->whereKey($request->getKey())
+            ->whereIn('status', array_map(static fn (RequestStatus $status): string => $status->value, $from))
+            ->update($attributes);
+
+        if ($changed !== 1) {
+            $request->refresh();
+
+            throw InvalidTransition::translated($error);
+        }
+
+        $request->refresh();
     }
 
     private function current(GdprRequest $request): GdprRequest

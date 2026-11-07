@@ -33,13 +33,24 @@ final class Schema
     }
 
     /**
+     * The schemas of this connection. getTables() without them answers for every database on a MariaDB server: a
+     * neighbour's table would pass hasTable(), and its name would be looked up here as if it were ours.
+     *
+     * @return list<string>
+     */
+    private function schemas(): array
+    {
+        return array_values($this->builder()->getCurrentSchemaListing() ?? []);
+    }
+
+    /**
      * @return list<string>
      */
     public function tables(): array
     {
         return $this->tables ??= array_map(
             static fn (array $table): string => (string) $table['name'],
-            $this->builder()->getTables(),
+            $this->builder()->getTables($this->schemas() ?: null),
         );
     }
 
@@ -88,10 +99,14 @@ final class Schema
     public function referencing(string $table): array
     {
         $found = [];
+        $schemas = $this->schemas();
 
         foreach ($this->tables() as $child) {
             foreach ($this->foreignKeys($child) as $key) {
-                if (($key['foreign_table'] ?? null) === $table) {
+                // A key can point across databases: a same-named table over there is not this one.
+                $elsewhere = isset($key['foreign_schema']) && $schemas !== [] && !in_array($key['foreign_schema'], $schemas, true);
+
+                if (($key['foreign_table'] ?? null) === $table && !$elsewhere) {
                     $found[] = [
                         'table' => $child,
                         'columns' => $key['columns'],

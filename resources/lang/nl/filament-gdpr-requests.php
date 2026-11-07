@@ -166,6 +166,8 @@ return [
         'partial_help' => 'Sommige groepen zijn mislukt. Groepen met status Klaar blijven gewist. Los de oorzaak op en hervat: de uitvoering gaat alleen vooruit en kan veilig worden herhaald.',
         'done' => 'Wissing voltooid',
         'done_help' => 'Alle groepen zijn afgehandeld. Back-ups, logs en externe systemen vallen niet onder dit hulpmiddel.',
+        'stale' => 'De run geeft geen signaal meer',
+        'stale_help' => 'Geen enkele worker heeft zich meer dan :minutes minuten gemeld; hij is mogelijk gestopt. Hervat: voltooide groepen worden niet herhaald.',
     ],
     'report' => [
         'counts' => ':matched gevonden, :changed gewijzigd, :trashed soft-deleted',
@@ -194,6 +196,8 @@ return [
         'export_link_issued' => 'Downloadlink uitgegeven',
         'export_downloaded' => 'Export gedownload',
         'record_email_accepted' => 'E-mailadres van record overgenomen',
+        'export_remove_failed' => 'Exportarchief kon niet worden verwijderd',
+        'erasure_interrupted' => 'Verwijdering onderbroken',
     ],
     'notifications' => [
         'failed' => 'De actie is mislukt',
@@ -250,6 +254,7 @@ return [
         'export_blocked' => 'De export kan niet worden gemaakt: :reason',
         'export_not_removed' => ':count exportarchief/-archieven konden niet worden verwijderd, dus er is niets gewijzigd. Probeer het opnieuw.',
         'record_email_unavailable' => 'Het gekoppelde record heeft geen e-mailadres om over te nemen.',
+        'retention_files_left' => ':count bestand(en) konden niet worden verwijderd; de paden staan in de samenvatting van deze run.',
     ],
     'blocker' => [
         'no_matcher' => 'Een item zegt niet hoe de rijen van de betrokkene te vinden zijn (subject(), matchedBy(), matchedByEmail() of matchedUsing()).',

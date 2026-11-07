@@ -29,6 +29,7 @@ use Workbench\App\Models\Customer;
 use Workbench\App\Models\Document;
 use Workbench\App\Models\Invoice;
 use Workbench\App\Models\Order;
+use Workbench\App\Models\OrderItem;
 use Workbench\App\Models\Ticket;
 use ZipArchive;
 
@@ -408,6 +409,7 @@ class SubjectIntegrityTest extends TestCase
     {
         $this->registry()->flush();
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        OrderItem::query()->delete();
         Order::query()->forceDelete();
         Invoice::query()->delete();
         $this->registry()->add(PersonalData::for(Customer::class)->subject(email: 'email')->erase(Erase::delete()));

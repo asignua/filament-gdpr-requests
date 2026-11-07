@@ -166,6 +166,8 @@ return [
         'partial_help' => 'Alcuni gruppi non sono riusciti. I gruppi contrassegnati Fatto restano cancellati. Rimuovete la causa e riprendete: l\'esecuzione va solo avanti ed è ripetibile in sicurezza.',
         'done' => 'Cancellazione terminata',
         'done_help' => 'Tutti i gruppi sono risolti. Backup, log e sistemi esterni non sono coperti da questo strumento.',
+        'stale' => 'L\'esecuzione non dà più segni di vita',
+        'stale_help' => 'Nessun worker si è fatto vivo da oltre :minutes minuti, potrebbe essere stato terminato. Riprendi: i gruppi finiti non vengono ripetuti.',
     ],
     'report' => [
         'counts' => ':matched trovate, :changed modificate, :trashed eliminate logicamente',
@@ -194,6 +196,8 @@ return [
         'export_link_issued' => 'Link di download emesso',
         'export_downloaded' => 'Esportazione scaricata',
         'record_email_accepted' => 'E-mail del record accettata',
+        'export_remove_failed' => 'Impossibile rimuovere l\'archivio di esportazione',
+        'erasure_interrupted' => 'Cancellazione interrotta',
     ],
     'notifications' => [
         'failed' => 'L\'azione non è riuscita',
@@ -250,6 +254,7 @@ return [
         'export_blocked' => 'Impossibile creare l\'esportazione: :reason',
         'export_not_removed' => 'Impossibile rimuovere :count archivio/i di esportazione, quindi non è stato modificato nulla. Riprova.',
         'record_email_unavailable' => 'Il record collegato non ha un indirizzo e-mail da adottare.',
+        'retention_files_left' => 'Impossibile rimuovere :count file; i percorsi sono nel riepilogo di questa esecuzione.',
     ],
     'blocker' => [
         'no_matcher' => 'Una voce non dice come trovare le righe dell\'interessato (subject(), matchedBy(), matchedByEmail() o matchedUsing()).',

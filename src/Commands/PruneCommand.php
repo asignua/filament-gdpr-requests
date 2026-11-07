@@ -51,9 +51,11 @@ class PruneCommand extends Command
             ->where('closed_at', '<', now()->subDays($days))
             ->get();
 
+        $failed = 0;
+
         if (!$dry) {
             foreach ($expired as $export) {
-                $exports->remove($export);
+                $failed += $exports->remove($export) ? 0 : 1;
             }
 
             foreach ($old as $request) {
@@ -70,10 +72,16 @@ class PruneCommand extends Command
             }
         }
 
-        $summary = ['exports' => $expired->count(), 'requests' => $old->count()];
+        $summary = ['exports' => $expired->count() - $failed, 'exports_failed' => $failed, 'requests' => $old->count()];
         $run->forceFill(['summary' => $summary, 'finished_at' => now()])->save();
 
         $this->components->info(($dry ? 'DRY RUN. ' : '').'Export archives: '.$summary['exports'].'; request details wiped: '.$summary['requests']);
+
+        if ($failed > 0) {
+            $this->components->error($failed.' export archive(s) could not be removed. They stay on record and the next run tries again.');
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }

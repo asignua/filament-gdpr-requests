@@ -102,8 +102,8 @@ final class Rule
     {
         return match ($this->kind) {
             self::FIXED => is_string($this->value) ? mb_strlen($this->value) : null,
-            self::HASH => strlen(self::HASH_PREFIX) + max(8, min(64, $this->length)),
-            self::TOKEN => strlen($this->prefix) + max(8, min(64, $this->length)) + strlen($this->suffix),
+            self::HASH => strlen(self::HASH_PREFIX) + $this->digestLength(),
+            self::TOKEN => strlen($this->prefix) + $this->digestLength() + strlen($this->suffix),
             default => null,
         };
     }
@@ -127,6 +127,11 @@ final class Rule
         };
     }
 
+    private function digestLength(): int
+    {
+        return max(8, min(64, $this->length));
+    }
+
     private function hashed(mixed $original, string $table, string $column): mixed
     {
         if ($original === null) {
@@ -135,7 +140,8 @@ final class Rule
 
         $text = (string) $original;
 
-        if (str_starts_with($text, self::HASH_PREFIX)) {
+        // Only the exact shape this rule writes counts as already done: `h1$Ada Lovelace` is still a name.
+        if (preg_match('/\A'.preg_quote(self::HASH_PREFIX, '/').'[0-9a-f]{'.$this->digestLength().'}\z/', $text) === 1) {
             return $text;
         }
 

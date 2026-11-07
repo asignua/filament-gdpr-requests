@@ -33,10 +33,10 @@ final class Pseudonym
         return $key;
     }
 
-    public static function isConfigured(): bool
+    public static function isConfigured(?int $version = null): bool
     {
         try {
-            self::key();
+            self::key($version);
 
             return true;
         } catch (MissingPseudonymKey) {
@@ -74,6 +74,15 @@ final class Pseudonym
     public static function digest(string $purpose, string $value, int $length, ?int $version = null): string
     {
         return substr(self::hmac('rule:'.$purpose, $value, $version), 0, max(8, min(64, $length)));
+    }
+
+    /**
+     * What a confirmation is bound to. It holds the subject's key, so it is keyed like every other pseudonym: an
+     * unkeyed hash would give the id back to anyone who tries the small range of ids against it.
+     */
+    public static function forPlan(string $description, ?int $version = null): string
+    {
+        return self::hmac('plan', $description, $version);
     }
 
     private static function hmac(string $purpose, string $value, ?int $version): string

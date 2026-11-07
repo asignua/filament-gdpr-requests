@@ -59,6 +59,11 @@ final class GdprRequests
         self::$adminsUsing = $resolver;
     }
 
+    public static function hasAdminResolver(): bool
+    {
+        return self::$adminsUsing !== null;
+    }
+
     /**
      * @return iterable<object>
      */

@@ -109,9 +109,9 @@ class ErasurePlanPage extends Page
 
     private function runAction(): Action
     {
-        return Action::make('run')->label(fn (): string => $this->gdprRequest()->status === RequestStatus::Partial ? Lang::t('plan.resume') : Lang::t('plan.run'))
+        return Action::make('run')->label(fn (): string => $this->gdprRequest()->status === RequestStatus::ErasureConfirmed ? Lang::t('plan.run') : Lang::t('plan.resume'))
             ->icon('heroicon-o-play')->color('danger')
-            ->visible(fn (): bool => in_array($this->gdprRequest()->status, [RequestStatus::ErasureConfirmed, RequestStatus::Partial], true))
+            ->visible(fn (): bool => in_array($this->gdprRequest()->status, [RequestStatus::ErasureConfirmed, RequestStatus::Partial], true) || $this->gdprRequest()->isStaleRun())
             ->modalHeading(Lang::t('plan.run'))
             ->modalDescription(Lang::t('plan.run_help'))
             ->modalSubmitActionLabel(Lang::t('plan.run_submit'))

@@ -166,6 +166,8 @@ return [
         'partial_help' => 'Alguns grupos falharam. Os grupos marcados como Concluído continuam eliminados. Corrija a causa e retome: a execução só avança e pode ser repetida com segurança.',
         'done' => 'Eliminação concluída',
         'done_help' => 'Todos os grupos foram resolvidos. Backups, logs e sistemas externos não são cobertos por esta ferramenta.',
+        'stale' => 'A execução parou de responder',
+        'stale_help' => 'Nenhum worker respondeu há mais de :minutes minutos; ele pode ter sido encerrado. Retome: os grupos concluídos não são repetidos.',
     ],
     'report' => [
         'counts' => ':matched encontradas, :changed alteradas, :trashed com exclusão lógica',
@@ -194,6 +196,8 @@ return [
         'export_link_issued' => 'Link de download emitido',
         'export_downloaded' => 'Exportação baixada',
         'record_email_accepted' => 'E-mail do registro aceito',
+        'export_remove_failed' => 'O arquivo de exportação não pôde ser removido',
+        'erasure_interrupted' => 'Apagamento interrompido',
     ],
     'notifications' => [
         'failed' => 'A ação falhou',
@@ -250,6 +254,7 @@ return [
         'export_blocked' => 'A exportação não pode ser gerada: :reason',
         'export_not_removed' => ':count arquivo(s) de exportação não puderam ser removidos, portanto nada foi alterado. Tente novamente.',
         'record_email_unavailable' => 'O registro vinculado não tem um endereço de e-mail para adotar.',
+        'retention_files_left' => ':count arquivo(s) não puderam ser removidos; os caminhos estão no resumo desta execução.',
     ],
     'blocker' => [
         'no_matcher' => 'Uma entrada não diz como encontrar as linhas do titular (subject(), matchedBy(), matchedByEmail() ou matchedUsing()).',

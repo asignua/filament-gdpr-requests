@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\Erasure;
 
+use Asignua\FilamentGdprRequests\Support\Pseudonym;
+
 /**
  * The whole preview for one request: groups in execution order plus blockers that belong to no single group.
  */
@@ -19,6 +21,7 @@ final class ErasurePlan
         public readonly array $blockers = [],
         public readonly string $subjectKey = '',
         public readonly ?string $subjectEmail = null,
+        public readonly ?int $keyVersion = null,
     ) {}
 
     /**
@@ -52,15 +55,15 @@ final class ErasurePlan
     }
 
     /**
-     * Hash of the map's rules in play and of WHO is being erased. A confirmation is only valid while this is
+     * Keyed hash of the map's rules in play and of WHO is being erased. A confirmation is only valid while this is
      * unchanged, so neither a changed rule nor a re-linked subject can ride on an old confirmation.
      */
     public function fingerprint(): string
     {
-        return hash('sha256', $this->subjectKey."\n".implode("\n", array_map(
+        return Pseudonym::forPlan($this->subjectKey."\n".implode("\n", array_map(
             static fn (GroupPlan $group): string => $group->entry->definitionSignature(),
             $this->groups,
-        )));
+        )), $this->keyVersion);
     }
 
     /**

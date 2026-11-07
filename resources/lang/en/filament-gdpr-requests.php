@@ -166,6 +166,8 @@ return [
         'partial_help' => 'Some groups failed. The groups marked Done stay erased. Fix the cause and resume: the run only continues forward and is safe to repeat.',
         'done' => 'Erasure finished',
         'done_help' => 'Every group is settled. Backups, logs and external systems are not covered by this tool.',
+        'stale' => 'The run has gone quiet',
+        'stale_help' => 'No worker has reported for more than :minutes minutes, so it may have been killed. Resume to continue: finished groups are not repeated.',
     ],
     'report' => [
         'counts' => ':matched found, :changed changed, :trashed soft-deleted',
@@ -194,6 +196,8 @@ return [
         'export_link_issued' => 'Download link issued',
         'export_downloaded' => 'Export downloaded',
         'record_email_accepted' => 'Record\'s e-mail accepted',
+        'export_remove_failed' => 'Export archive could not be removed',
+        'erasure_interrupted' => 'Erasure interrupted',
     ],
     'notifications' => [
         'failed' => 'The action failed',
@@ -250,6 +254,7 @@ return [
         'export_blocked' => 'The export cannot be built: :reason',
         'export_not_removed' => ':count export archive(s) could not be removed, so nothing was changed. Try again.',
         'record_email_unavailable' => 'The linked record has no e-mail address to take over.',
+        'retention_files_left' => ':count file(s) could not be removed; their paths are in the summary of this run.',
     ],
     'blocker' => [
         'no_matcher' => 'An entry does not say how to find the subject\'s rows (subject(), matchedBy(), matchedByEmail() or matchedUsing()).',

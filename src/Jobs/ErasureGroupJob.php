@@ -10,6 +10,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use RuntimeException;
+use Throwable;
 
 /**
  * One job per map entry. It never retries by itself (tries = 1): a failure marks the request `partial` and stops
@@ -32,5 +34,13 @@ final class ErasureGroupJob implements ShouldQueue
         $request = GdprRequest::query()->findOrFail($this->requestId);
 
         $runner->runGroup($request, $this->groupKey);
+    }
+
+    /**
+     * Also what a killed worker or a timeout ends in: the run must not stay `erasing`.
+     */
+    public function failed(?Throwable $exception): void
+    {
+        app(Runner::class)->recordFailure($this->requestId, $this->groupKey, $exception ?? new RuntimeException('Job failed'));
     }
 }

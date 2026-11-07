@@ -14,8 +14,8 @@ use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Models\GdprRequestStep;
 use Asignua\FilamentGdprRequests\Services\RequestLog;
 use Asignua\FilamentGdprRequests\Support\Environment;
+use Asignua\FilamentGdprRequests\Support\Files;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -33,40 +33,46 @@ final class Runner
         Environment::assertSupported();
 
         try {
-            /** @var list<array{disk: string, path: string}> $files */
-            $files = DB::transaction(fn (): array => $this->inTransaction($request, $groupKey));
+            /** @var list<array{disk: string, path: string}>|null $files */
+            $files = DB::transaction(fn (): ?array => $this->inTransaction($request, $groupKey));
         } catch (Throwable $e) {
-            $this->recordFailure($request, $groupKey, $e);
+            $this->recordFailure($request->getKey(), $groupKey, $e);
 
             throw $e;
         }
 
-        $this->removeFiles($request, $groupKey, $files);
+        if ($files !== null) {
+            $this->removeFiles($request, $groupKey, $files);
+        }
     }
 
     /**
-     * @return list<array{disk: string, path: string}> files to remove after the commit
+     * @return list<array{disk: string, path: string}>|null files to remove after the commit, null when this call
+     *                                                      found the group finished and did nothing
      */
-    private function inTransaction(GdprRequest $request, string $groupKey): array
+    private function inTransaction(GdprRequest $request, string $groupKey): ?array
     {
         /** @var GdprRequest $locked */
         $locked = GdprRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($locked->status !== RequestStatus::Erasing) {
-            throw InvalidTransition::translated('not_erasing');
-        }
-
         $confirmed = (string) ($locked->erasure_plan['fingerprint'] ?? '');
         $step = GdprRequestStep::query()->firstOrNew(['request_id' => $locked->getKey(), 'group_key' => $groupKey]);
 
+        // First: a duplicate job finds a finished group quietly, whatever the request has moved on to.
         if ($step->exists && $step->isComplete($confirmed)) {
-            return [];
+            return null;
+        }
+
+        if ($locked->status !== RequestStatus::Erasing) {
+            throw InvalidTransition::translated('not_erasing');
         }
 
         $locked->forceFill(['erasure_heartbeat_at' => now()])->save();
 
         // Rows of this group were already changed and committed earlier; only the file cleanup is left.
         if ($step->exists && $step->rowsDone($confirmed)) {
+            $step->forceFill(['attempts' => $step->attempts + 1])->save();
+
             return $step->pendingFiles();
         }
 
@@ -135,63 +141,64 @@ final class Runner
      */
     private function removeFiles(GdprRequest $request, string $groupKey, array $files): void
     {
-        if ($files === []) {
+        $left = array_values(array_filter($files, static fn (array $file): bool => !Files::remove($file['disk'], $file['path'])));
+        $step = GdprRequestStep::query()->where(['request_id' => $request->getKey(), 'group_key' => $groupKey])->firstOrFail();
+
+        if ($files === [] && $step->status !== StepStatus::Failed) {
             return;
         }
 
-        $left = [];
-
-        foreach ($files as $file) {
-            try {
-                $disk = Storage::disk($file['disk']);
-
-                if ($disk->exists($file['path']) && !$disk->delete($file['path'])) {
-                    $left[] = $file;
-                }
-            } catch (Throwable) {
-                $left[] = $file;
-            }
-        }
-
-        $step = GdprRequestStep::query()->where(['request_id' => $request->getKey(), 'group_key' => $groupKey])->firstOrFail();
         $detail = $step->details();
         $detail['files_pending'] = $left;
         $step->forceFill(['detail' => $this->encode($detail)]);
 
         if ($left === []) {
-            $step->save();
+            // Rows are done and the files are gone: a group failed only by its files is finished now.
+            $step->forceFill(['status' => $step->status === StepStatus::Failed ? StepStatus::Done : $step->status, 'error' => null, 'finished_at' => now()])->save();
 
             return;
         }
 
         $step->forceFill(['status' => StepStatus::Failed, 'error' => count($left).' file(s) could not be removed; see the pending list'])->save();
-        $this->markPartial($request, $groupKey, 'files');
+        $this->markPartial($request->getKey(), $groupKey, 'files');
 
         throw GdprException::translated('files_not_removed', ['count' => count($left)]);
     }
 
-    private function recordFailure(GdprRequest $request, string $groupKey, Throwable $e): void
+    /**
+     * A failure of a group while the request is erasing. Anything else is a late or duplicate job: the request has
+     * moved on and nothing here may rewrite it, and a step already settled under this plan stays what it is.
+     */
+    public function recordFailure(int $requestId, string $groupKey, Throwable $e): void
     {
-        $message = Failures::describe($e);
+        $request = GdprRequest::query()->whereKey($requestId)->first();
 
-        $step = GdprRequestStep::query()->firstOrNew(['request_id' => $request->getKey(), 'group_key' => $groupKey]);
-        $step->forceFill([
-            'label' => $step->label ?? $groupKey,
-            'strategy' => $step->strategy ?? '',
-            'status' => StepStatus::Failed,
-            'attempts' => ($step->attempts ?? 0) + 1,
-            'error' => $message,
-        ])->save();
+        if ($request === null || $request->status !== RequestStatus::Erasing) {
+            return;
+        }
 
-        $this->markPartial($request, $groupKey, class_basename($e));
+        $confirmed = (string) ($request->erasure_plan['fingerprint'] ?? '');
+        $step = GdprRequestStep::query()->firstOrNew(['request_id' => $requestId, 'group_key' => $groupKey]);
+
+        if (!$step->exists || !$step->status->isSettled() || $step->fingerprint !== $confirmed) {
+            $step->forceFill([
+                'label' => $step->label ?? $groupKey,
+                'strategy' => $step->strategy ?? '',
+                'status' => StepStatus::Failed,
+                'attempts' => ($step->attempts ?? 0) + 1,
+                'error' => Failures::describe($e),
+            ])->save();
+        }
+
+        $this->markPartial($requestId, $groupKey, class_basename($e));
     }
 
-    private function markPartial(GdprRequest $request, string $groupKey, string $reason): void
+    private function markPartial(int $requestId, string $groupKey, string $reason): void
     {
-        GdprRequest::query()->whereKey($request->getKey())->where('status', RequestStatus::Erasing->value)
+        GdprRequest::query()->whereKey($requestId)->where('status', RequestStatus::Erasing->value)
             ->update(['status' => RequestStatus::Partial->value]);
 
-        RequestLog::record($request, 'erasure_group_failed', null, ['group' => $groupKey, 'reason' => $reason]);
+        RequestLog::record(GdprRequest::query()->findOrFail($requestId), 'erasure_group_failed', null, ['group' => $groupKey, 'reason' => $reason]);
     }
 
     /**

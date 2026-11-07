@@ -9,6 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Throwable;
 
 /**
  * The last link of the chain: marks the request fulfilled only when every group is settled.
@@ -26,5 +27,10 @@ final class FinalizeErasureJob implements ShouldQueue
     public function handle(ErasureService $service): void
     {
         $service->finalize($this->requestId);
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        app(ErasureService::class)->interrupted($this->requestId, $exception);
     }
 }

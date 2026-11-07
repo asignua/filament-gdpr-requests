@@ -58,6 +58,13 @@
             </x-filament::section>
         @endif
 
+        @if ($record->isStaleRun())
+            <x-filament::section icon="heroicon-o-exclamation-triangle" icon-color="warning">
+                <x-slot name="heading">{{ Lang::t('plan.stale') }}</x-slot>
+                <p class="text-sm">{{ Lang::t('plan.stale_help', ['minutes' => $record::staleRunMinutes()]) }}</p>
+            </x-filament::section>
+        @endif
+
         @if ($record->status === RequestStatus::Partial)
             <x-filament::section icon="heroicon-o-exclamation-triangle" icon-color="danger">
                 <x-slot name="heading">{{ Lang::t('plan.partial') }}</x-slot>

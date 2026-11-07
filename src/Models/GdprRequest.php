@@ -152,6 +152,21 @@ class GdprRequest extends Model
         return $this->identity_verified_at !== null;
     }
 
+    /**
+     * An erasing run whose worker has gone quiet for longer than `erasure.stale_run_minutes`: it may be resumed.
+     */
+    public function isStaleRun(): bool
+    {
+        return $this->status === RequestStatus::Erasing
+            && ($this->erasure_heartbeat_at === null
+                || $this->erasure_heartbeat_at->lt(now()->subMinutes(self::staleRunMinutes())));
+    }
+
+    public static function staleRunMinutes(): int
+    {
+        return (int) config('filament-gdpr-requests.erasure.stale_run_minutes', 30);
+    }
+
     public function hasSubject(): bool
     {
         return $this->subject_model !== null && $this->subject_id !== null;

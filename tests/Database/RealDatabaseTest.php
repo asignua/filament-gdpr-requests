@@ -13,6 +13,7 @@ use Asignua\FilamentGdprRequests\Enums\StepStatus;
 use Asignua\FilamentGdprRequests\Erasure\Runner;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Services\ErasureService;
+use Asignua\FilamentGdprRequests\Support\Schema as GdprSchema;
 use Asignua\FilamentGdprRequests\Tests\Support\Shop;
 use Asignua\FilamentGdprRequests\Tests\TestCase;
 use Illuminate\Database\QueryException;
@@ -55,8 +56,9 @@ class RealDatabaseTest extends TestCase
      */
     private function emptyAllTables(): void
     {
+        // Without the schema argument getTables() lists every database the user can see, not this one.
         $tables = array_values(array_filter(
-            array_map(static fn (array $table): string => (string) $table['name'], Schema::getTables()),
+            array_map(static fn (array $table): string => (string) $table['name'], Schema::getTables(Schema::getCurrentSchemaListing())),
             static fn (string $name): bool => $name !== 'migrations',
         ));
 
@@ -174,6 +176,48 @@ class RealDatabaseTest extends TestCase
         $this->assertSame(1, $request->events()->where('event', 'erasure_started')->count());
         $this->assertSame(0, (int) $request->steps()->where('attempts', '!=', 1)->count());
         $this->assertSame('Erased customer', Customer::query()->find($ada->id)->name);
+    }
+
+    public function test_the_schema_reader_stays_inside_the_current_database(): void
+    {
+        $foreign = env('GDPR_TEST_FOREIGN_DB');
+
+        if (!is_string($foreign) || $foreign === '') {
+            $this->markTestSkipped('Set GDPR_TEST_FOREIGN_DB to a neighbouring database (MariaDB) or schema (Postgres) holding customers, foreign_only and foreign_child.');
+        }
+
+        $mysql = DB::getDriverName() !== 'pgsql';
+        $present = DB::table('information_schema.tables')->where('table_schema', $foreign)->pluck('table_name')->all();
+        $this->assertEqualsCanonicalizing(['customers', 'foreign_only', 'foreign_child'], $present, 'The neighbour must really be there.');
+
+        $schema = new GdprSchema;
+
+        $this->assertFalse($schema->hasTable('foreign_only'), 'A table of another database is not ours.');
+        $this->assertFalse($schema->hasTable('foreign_child'));
+        $this->assertTrue($schema->hasTable('customers'));
+        $this->assertSame(count($schema->tables()), count(array_unique($schema->tables())), 'A name shared with the neighbour appears once.');
+        $this->assertNotContains('foreign_child', array_column($schema->referencing('customers'), 'table'), 'A foreign key of the neighbour does not point at our customers.');
+
+        $ours = array_column($schema->referencing('customers'), 'table');
+        $this->assertContains('orders', $ours);
+
+        // A table of ours that points at the NEIGHBOUR's customers does not reference our customers either.
+        $qualified = $mysql ? '`'.$foreign.'`.`customers`' : '"'.$foreign.'"."customers"';
+        DB::statement('create table cross_ref (id bigint primary key, customer_id '.($mysql ? 'bigint unsigned' : 'bigint').' references '.$qualified.' (id), foreign key (customer_id) references '.$qualified.' (id))');
+
+        try {
+            $this->assertNotContains('cross_ref', array_column((new GdprSchema)->referencing('customers'), 'table'));
+        } finally {
+            DB::statement('drop table cross_ref');
+        }
+
+        // The erasure preview on top of it: nothing of the neighbour reaches a plan, and the sweep leaves it alone.
+        $request = $this->confirmedErasure(Shop::customer('Ada', 'ada@customer.example'));
+        $plan = app(ErasureService::class)->plan($request);
+        $this->assertSame([], array_map(static fn ($blocker): string => $blocker->message(), $plan->allBlockers()));
+
+        $this->emptyAllTables();
+        $this->assertSame('sentinel', DB::table($foreign.'.customers')->value('marker'));
     }
 
     /**

@@ -43,7 +43,10 @@ final class Planner
 
         $global = [];
 
-        if (!Pseudonym::isConfigured()) {
+        // The key the request's pseudonyms were made with: a rotation must not strand a confirmed erasure.
+        $keyVersion = $request->pseudonym_key_version;
+
+        if (!Pseudonym::isConfigured() || !Pseudonym::isConfigured($keyVersion)) {
             $global[] = new Blocker('pseudonym_key_missing');
         }
 
@@ -80,7 +83,7 @@ final class Planner
 
         $groups = $this->order($groups, $schema);
 
-        return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema)], $model.'#'.$request->subject_id, $subject->email);
+        return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema)], $model.'#'.$request->subject_id, $subject->email, $keyVersion);
     }
 
     /**

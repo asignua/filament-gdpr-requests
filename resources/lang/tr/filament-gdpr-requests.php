@@ -166,6 +166,8 @@ return [
         'partial_help' => 'Bazı gruplar başarısız oldu. Bitti olarak işaretli gruplar silinmiş kalır. Nedeni giderip devam edin: çalıştırma yalnızca ileri gider ve güvenle tekrarlanabilir.',
         'done' => 'Silme tamamlandı',
         'done_help' => 'Tüm gruplar sonuçlandı. Yedekler, günlükler ve harici sistemler bu aracın kapsamında değildir.',
+        'stale' => 'Çalıştırma yanıt vermiyor',
+        'stale_help' => ':minutes dakikadan uzun süredir hiçbir işçi yanıt vermedi, durdurulmuş olabilir. Devam ettirin: tamamlanan gruplar tekrarlanmaz.',
     ],
     'report' => [
         'counts' => ':matched bulundu, :changed değişti, :trashed yumuşak silindi',
@@ -194,6 +196,8 @@ return [
         'export_link_issued' => 'İndirme bağlantısı verildi',
         'export_downloaded' => 'Dışa aktarım indirildi',
         'record_email_accepted' => 'Kaydın e-postası kabul edildi',
+        'export_remove_failed' => 'Dışa aktarma arşivi kaldırılamadı',
+        'erasure_interrupted' => 'Silme kesintiye uğradı',
     ],
     'notifications' => [
         'failed' => 'İşlem başarısız oldu',
@@ -250,6 +254,7 @@ return [
         'export_blocked' => 'Dışa aktarma oluşturulamıyor: :reason',
         'export_not_removed' => ':count dışa aktarma arşivi kaldırılamadı, bu nedenle hiçbir şey değiştirilmedi. Yeniden deneyin.',
         'record_email_unavailable' => 'Bağlı kayıtta devralınacak bir e-posta adresi yok.',
+        'retention_files_left' => ':count dosya kaldırılamadı; yolları bu çalıştırmanın özetinde yer alıyor.',
     ],
     'blocker' => [
         'no_matcher' => 'Bir giriş, ilgili kişinin satırlarının nasıl bulunacağını söylemiyor (subject(), matchedBy(), matchedByEmail() veya matchedUsing()).',

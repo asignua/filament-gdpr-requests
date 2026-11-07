@@ -8,6 +8,7 @@ use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Enums\RequestType;
 use Asignua\FilamentGdprRequests\GdprRequests;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
+use Asignua\FilamentGdprRequests\Models\GdprRun;
 use Asignua\FilamentGdprRequests\Notifications\DeadlineNotification;
 use Asignua\FilamentGdprRequests\Services\RequestService;
 use Asignua\FilamentGdprRequests\Tests\Support\Shop;
@@ -105,5 +106,85 @@ class HousekeepingTest extends TestCase
         $this->artisan('gdpr:remind')->assertSuccessful();
         Notification::assertSentToTimes($dpo, DeadlineNotification::class, 1);
         $this->assertNull($closed->refresh()->reminded_overdue_at);
+    }
+
+    public function test_an_unassigned_request_due_soon_is_not_marked_reminded_when_nobody_was_told(): void
+    {
+        Notification::fake();
+        $request = GdprRequests::submit(RequestType::Access, 'a@customer.example');
+        $this->travelTo($request->due_at->copy()->subDays(3));
+
+        $this->artisan('gdpr:remind')->expectsOutputToContain('no assignee')->assertSuccessful();
+
+        Notification::assertNothingSent();
+        $this->assertNull($request->refresh()->reminded_due_at);
+        $this->assertSame(['due' => 0, 'overdue' => 0, 'unreached' => 1], GdprRun::query()->where('command', 'remind')->latest('id')->first()->summary);
+
+        // Someone takes it: the reminder goes out after all.
+        $assignee = $this->user('manager', 'Assignee');
+        app(RequestService::class)->assign($request, $assignee->id, $this->user('dpo'));
+        $this->artisan('gdpr:remind')->assertSuccessful();
+
+        Notification::assertSentToTimes($assignee, DeadlineNotification::class, 1);
+        $this->assertNotNull($request->refresh()->reminded_due_at);
+    }
+
+    public function test_an_overdue_request_is_not_marked_when_no_resolver_tells_anyone(): void
+    {
+        Notification::fake();
+        $request = GdprRequests::submit(RequestType::Access, 'a@customer.example');
+        $this->travelTo($request->due_at->copy()->addDay());
+
+        $this->artisan('gdpr:remind')->expectsOutputToContain('notifyAdminsUsing')->assertSuccessful();
+
+        Notification::assertNothingSent();
+        $this->assertNull($request->refresh()->reminded_overdue_at);
+        $this->assertSame(['due' => 0, 'overdue' => 0, 'unreached' => 1], GdprRun::query()->where('command', 'remind')->latest('id')->first()->summary);
+
+        $admin = $this->user('dpo', 'Admin');
+        GdprRequests::notifyAdminsUsing(fn () => [$admin]);
+        $this->artisan('gdpr:remind')->assertSuccessful();
+
+        Notification::assertSentToTimes($admin, DeadlineNotification::class, 1);
+        $this->assertNotNull($request->refresh()->reminded_overdue_at);
+    }
+
+    public function test_an_overdue_request_with_an_assignee_warns_about_the_resolver_but_is_marked(): void
+    {
+        Notification::fake();
+        $assignee = $this->user('manager', 'Assignee');
+        $request = GdprRequests::submit(RequestType::Access, 'a@customer.example');
+        app(RequestService::class)->assign($request, $assignee->id, $this->user('dpo'));
+        $this->travelTo($request->due_at->copy()->addDay());
+
+        $this->artisan('gdpr:remind')->expectsOutputToContain('notifyAdminsUsing')->assertSuccessful();
+
+        Notification::assertSentToTimes($assignee, DeadlineNotification::class, 1);
+        $this->assertNotNull($request->refresh()->reminded_overdue_at);
+    }
+
+    public function test_a_resolver_that_returns_nobody_is_the_same_as_no_resolver(): void
+    {
+        Notification::fake();
+        GdprRequests::notifyAdminsUsing(fn () => []);
+        $request = GdprRequests::submit(RequestType::Access, 'a@customer.example');
+        $this->travelTo($request->due_at->copy()->addDay());
+
+        $this->artisan('gdpr:remind')->assertSuccessful();
+
+        $this->assertNull($request->refresh()->reminded_overdue_at);
+    }
+
+    public function test_a_reminder_that_cannot_be_delivered_is_not_marked(): void
+    {
+        $assignee = $this->user('manager', 'Assignee');
+        $request = GdprRequests::submit(RequestType::Access, 'a@customer.example');
+        app(RequestService::class)->assign($request, $assignee->id, $this->user('dpo'));
+        $this->travelTo($request->due_at->copy()->subDays(3));
+        config(['mail.default' => 'nope', 'mail.mailers.nope' => ['transport' => 'nope']]);
+
+        $this->artisan('gdpr:remind')->assertSuccessful();
+
+        $this->assertNull($request->refresh()->reminded_due_at);
     }
 }

@@ -166,6 +166,8 @@ return [
         'partial_help' => 'Część grup się nie powiodła. Grupy oznaczone jako Wykonano pozostają usunięte. Usuń przyczynę i wznów: przebieg idzie tylko do przodu i można go bezpiecznie powtórzyć.',
         'done' => 'Usuwanie zakończone',
         'done_help' => 'Wszystkie grupy są załatwione. Kopie zapasowe, logi i systemy zewnętrzne nie są objęte tym narzędziem.',
+        'stale' => 'Uruchomienie przestało się zgłaszać',
+        'stale_help' => 'Żaden worker nie zgłosił się od ponad :minutes min, mógł zostać zatrzymany. Wznów: ukończone grupy nie są powtarzane.',
     ],
     'report' => [
         'counts' => 'znaleziono :matched, zmieniono :changed, miękko usunięto :trashed',
@@ -194,6 +196,8 @@ return [
         'export_link_issued' => 'Wydano link do pobrania',
         'export_downloaded' => 'Eksport pobrany',
         'record_email_accepted' => 'Przyjęto adres z rekordu',
+        'export_remove_failed' => 'Nie udało się usunąć archiwum eksportu',
+        'erasure_interrupted' => 'Usuwanie przerwane',
     ],
     'notifications' => [
         'failed' => 'Działanie nie powiodło się',
@@ -250,6 +254,7 @@ return [
         'export_blocked' => 'Nie można utworzyć eksportu: :reason',
         'export_not_removed' => 'Nie udało się usunąć archiwów eksportu (:count), więc niczego nie zmieniono. Spróbuj ponownie.',
         'record_email_unavailable' => 'Powiązany rekord nie ma adresu e-mail do przejęcia.',
+        'retention_files_left' => 'Nie udało się usunąć plików (:count); ich ścieżki są w podsumowaniu tego uruchomienia.',
     ],
     'blocker' => [
         'no_matcher' => 'Wpis mapy nie mówi, jak znaleźć wiersze osoby (subject(), matchedBy(), matchedByEmail() lub matchedUsing()).',
