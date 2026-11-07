@@ -1,0 +1,80 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Asignua\FilamentGdprRequests\Commands;
+
+use Asignua\FilamentGdprRequests\Enums\RequestStatus;
+use Asignua\FilamentGdprRequests\Exceptions\GdprException;
+use Asignua\FilamentGdprRequests\Models\GdprRequest;
+use Asignua\FilamentGdprRequests\Models\GdprRequestExport;
+use Asignua\FilamentGdprRequests\Models\GdprRun;
+use Asignua\FilamentGdprRequests\Services\ExportService;
+use Asignua\FilamentGdprRequests\Support\Environment;
+use Illuminate\Console\Command;
+
+/**
+ * Housekeeping of the plugin's OWN records: expired export archives, and the name / address / message / notes of
+ * requests closed longer than `request_retention_days` ago. The pseudonym and the structural log stay.
+ */
+class PruneCommand extends Command
+{
+    protected $signature = 'gdpr:prune {--dry-run : Only report what would be removed}';
+
+    protected $description = 'Remove expired export archives and wipe the details of old closed requests';
+
+    public function handle(ExportService $exports): int
+    {
+        try {
+            Environment::assertSupported();
+        } catch (GdprException $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $dry = (bool) $this->option('dry-run');
+        $run = GdprRun::query()->create(['command' => 'prune', 'dry_run' => $dry, 'started_at' => now()]);
+
+        $expired = GdprRequestExport::query()
+            ->whereNull('removed_at')
+            ->where(static function ($query): void {
+                $query->where('expires_at', '<', now())
+                    ->orWhereHas('request', static fn ($request) => $request->whereNotIn('status', RequestStatus::openValues()));
+            })
+            ->get();
+
+        $days = max(0, (int) config('filament-gdpr-requests.request_retention_days', 90));
+        $old = GdprRequest::query()
+            ->whereNotNull('closed_at')
+            ->whereNull('details_purged_at')
+            ->where('closed_at', '<', now()->subDays($days))
+            ->get();
+
+        if (!$dry) {
+            foreach ($expired as $export) {
+                $exports->remove($export);
+            }
+
+            foreach ($old as $request) {
+                $request->forceFill([
+                    'subject_name' => null,
+                    'subject_email' => null,
+                    'message' => null,
+                    'notes' => null,
+                    'identity_note' => null,
+                    'refusal_reason' => null,
+                    'extension_reason' => null,
+                    'details_purged_at' => now(),
+                ])->save();
+            }
+        }
+
+        $summary = ['exports' => $expired->count(), 'requests' => $old->count()];
+        $run->forceFill(['summary' => $summary, 'finished_at' => now()])->save();
+
+        $this->components->info(($dry ? 'DRY RUN. ' : '').'Export archives: '.$summary['exports'].'; request details wiped: '.$summary['requests']);
+
+        return self::SUCCESS;
+    }
+}

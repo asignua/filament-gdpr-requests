@@ -6,7 +6,11 @@
          cacheDirectory=".phpunit.cache">
     <testsuites>
         <testsuite name="GDPR Requests">
-            <directory>tests</directory>
+            <directory>tests/Feature</directory>
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Databases">
+            <directory>tests/Database</directory>
         </testsuite>
     </testsuites>
     <source>

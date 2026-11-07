@@ -1,0 +1,127 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // No foreign keys to the host's users table on purpose: an erased or deleted staff account must never
+        // be blocked by (or cascade into) the audit trail, and the key type of the host's users is unknown.
+        Schema::create('gdpr_requests', function (Blueprint $table): void {
+            $table->id();
+            $table->ulid('ulid')->unique();
+            $table->string('type', 24);
+            $table->string('status', 24)->index();
+            $table->string('channel', 24)->default('email');
+            $table->string('locale', 12)->nullable();
+
+            // Subject: an explicit key (registered model + id), never a search. Detached when the request closes.
+            $table->string('subject_model')->nullable();
+            $table->string('subject_id', 64)->nullable();
+            $table->string('subject_name')->nullable();
+            $table->string('subject_email')->nullable();
+            // HMAC pseudonyms: all that is left of the identity once the details are detached and purged.
+            $table->string('pseudonym', 64)->nullable()->index();
+            $table->string('email_pseudonym', 64)->nullable()->index();
+            $table->unsignedSmallInteger('pseudonym_key_version')->nullable();
+
+            $table->text('message')->nullable();
+            $table->text('notes')->nullable();
+            $table->string('assignee_id', 64)->nullable()->index();
+
+            $table->dateTime('received_at');
+            $table->dateTime('due_at')->index();
+            $table->dateTime('extended_at')->nullable();
+            $table->text('extension_reason')->nullable();
+
+            $table->dateTime('identity_verified_at')->nullable();
+            $table->string('identity_verified_by', 64)->nullable();
+            $table->text('identity_note')->nullable();
+
+            $table->dateTime('erasure_confirmed_at')->nullable();
+            $table->string('erasure_confirmed_by', 64)->nullable();
+            $table->longText('erasure_plan')->nullable();
+            $table->dateTime('erasure_started_at')->nullable();
+            $table->string('erasure_started_by', 64)->nullable();
+            $table->dateTime('erasure_heartbeat_at')->nullable();
+            $table->dateTime('erasure_finished_at')->nullable();
+
+            $table->dateTime('refused_at')->nullable();
+            $table->text('refusal_reason')->nullable();
+            $table->dateTime('closed_at')->nullable()->index();
+            $table->dateTime('details_purged_at')->nullable();
+
+            $table->dateTime('reminded_due_at')->nullable();
+            $table->dateTime('reminded_overdue_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('gdpr_request_events', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('request_id')->constrained('gdpr_requests')->cascadeOnDelete();
+            $table->string('event', 48);
+            $table->string('actor_id', 64)->nullable();
+            // Structural facts only (counts, group keys, flags): never names, addresses or free text of the subject.
+            $table->longText('context')->nullable();
+            $table->dateTime('created_at');
+            $table->index(['request_id', 'id']);
+        });
+
+        Schema::create('gdpr_request_steps', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('request_id')->constrained('gdpr_requests')->cascadeOnDelete();
+            $table->string('group_key');
+            $table->string('label');
+            $table->string('strategy', 16);
+            $table->string('status', 16);
+            $table->unsignedInteger('matched')->default(0);
+            $table->unsignedInteger('changed')->default(0);
+            $table->unsignedInteger('trashed')->default(0);
+            $table->unsignedSmallInteger('attempts')->default(0);
+            $table->text('detail')->nullable();
+            $table->text('error')->nullable();
+            $table->dateTime('finished_at')->nullable();
+            $table->timestamps();
+            $table->unique(['request_id', 'group_key']);
+        });
+
+        Schema::create('gdpr_request_exports', function (Blueprint $table): void {
+            $table->id();
+            $table->ulid('ulid')->unique();
+            $table->foreignId('request_id')->constrained('gdpr_requests')->cascadeOnDelete();
+            $table->string('status', 16);
+            $table->string('disk')->nullable();
+            $table->string('path')->nullable();
+            $table->unsignedBigInteger('size')->default(0);
+            $table->string('created_by', 64)->nullable();
+            $table->unsignedInteger('downloads')->default(0);
+            $table->text('error')->nullable();
+            $table->dateTime('expires_at')->nullable()->index();
+            $table->dateTime('removed_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('gdpr_runs', function (Blueprint $table): void {
+            $table->id();
+            $table->string('command', 48);
+            $table->boolean('dry_run')->default(true);
+            $table->longText('summary')->nullable();
+            $table->dateTime('started_at');
+            $table->dateTime('finished_at')->nullable();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('gdpr_runs');
+        Schema::dropIfExists('gdpr_request_exports');
+        Schema::dropIfExists('gdpr_request_steps');
+        Schema::dropIfExists('gdpr_request_events');
+        Schema::dropIfExists('gdpr_requests');
+    }
+};

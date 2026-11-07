@@ -1,0 +1,56 @@
+# Try the plugin by hand (see README, "Try it in the workbench"):
+#   vendor/bin/testbench workbench:build && vendor/bin/testbench filament:assets
+#   vendor/bin/testbench db:seed --class="Workbench\Database\Seeders\DatabaseSeeder"
+#   vendor/bin/testbench serve --host=0.0.0.0
+# Log in at /admin as marta@example.test / password (may confirm erasures), oleh@example.test / password
+# (may run them: four eyes) or nina@example.test / password (a manager without export/erase rights).
+providers:
+  - Filament\Actions\ActionsServiceProvider
+  - BladeUI\Heroicons\BladeHeroiconsServiceProvider
+  - BladeUI\Icons\BladeIconsServiceProvider
+  - Filament\FilamentServiceProvider
+  - Filament\Forms\FormsServiceProvider
+  - Filament\Infolists\InfolistsServiceProvider
+  - Livewire\LivewireServiceProvider
+  - Filament\Notifications\NotificationsServiceProvider
+  - Filament\Schemas\SchemasServiceProvider
+  - Filament\Support\SupportServiceProvider
+  - Filament\Tables\TablesServiceProvider
+  - Filament\Widgets\WidgetsServiceProvider
+  - RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider
+  - Asignua\FilamentGdprRequests\GdprRequestsServiceProvider
+  - Workbench\App\Providers\WorkbenchServiceProvider
+  - Workbench\App\Providers\AdminPanelProvider
+
+migrations:
+  - workbench/database/migrations
+
+seeders:
+  - Workbench\Database\Seeders\DatabaseSeeder
+
+env:
+  APP_KEY: base64:YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
+  GDPR_PSEUDONYM_KEY: demo-only-pseudonym-key-0123456789abcdef
+  DB_CONNECTION: sqlite
+  SESSION_DRIVER: file
+  CACHE_STORE: array
+  QUEUE_CONNECTION: sync
+  BROADCAST_CONNECTION: "null"
+
+workbench:
+  start: /admin
+  install: true
+  discovers:
+    web: false
+    api: false
+    commands: false
+    components: false
+    views: false
+  build:
+    - asset-publish
+    - create-sqlite-db
+    - db-wipe
+    - migrate-fresh
+  assets:
+    - laravel-assets
+  sync: []
