@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\DataMap;
 
+use Asignua\FilamentGdprRequests\Support\Lang;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Closure;
 
@@ -116,6 +117,32 @@ final class Rule
         return $this->kind === self::HASH || $this->kind === self::TOKEN;
     }
 
+    /**
+     * The rule writes NULL into the column, however it is spelled.
+     */
+    public function writesNull(): bool
+    {
+        return $this->kind === self::NULL || ($this->kind === self::FIXED && $this->value === null);
+    }
+
+    /**
+     * What the preview shows, in the language of the reader.
+     */
+    public function label(): string
+    {
+        return match (true) {
+            $this->writesNull() => Lang::t('rule.null'),
+            $this->kind === self::FIXED => Lang::t('rule.fixed', ['value' => (string) json_encode($this->value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]),
+            $this->kind === self::HASH => Lang::t('rule.hash'),
+            $this->kind === self::TOKEN => Lang::t('rule.token', ['prefix' => $this->prefix, 'suffix' => $this->suffix]),
+            $this->unique => Lang::t('rule.callback_unique'),
+            default => Lang::t('rule.callback'),
+        };
+    }
+
+    /**
+     * Stable, locale-free text of the rule: part of the plan fingerprint, never shown to anyone.
+     */
     public function describe(): string
     {
         return match ($this->kind) {

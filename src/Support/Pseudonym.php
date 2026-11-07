@@ -12,7 +12,15 @@ use Asignua\FilamentGdprRequests\Exceptions\MissingPseudonymKey;
  */
 final class Pseudonym
 {
-    private const int MIN_KEY_BYTES = 32;
+    public const int MIN_KEY_BYTES = 32;
+
+    /**
+     * The message that says the key is missing and how to set it, or null when all is well.
+     */
+    public static function setupProblem(): ?string
+    {
+        return self::isConfigured() ? null : Lang::t('errors.pseudonym_key_missing', ['version' => self::currentVersion(), 'min' => self::MIN_KEY_BYTES]);
+    }
 
     public static function currentVersion(): int
     {

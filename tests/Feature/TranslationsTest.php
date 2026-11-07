@@ -88,7 +88,8 @@ class TranslationsTest extends TestCase
         $english = $this->flat('en');
 
         foreach (['action.none', 'action.anonymize', 'action.delete', 'action.retain', 'plan.four_eyes_on', 'plan.four_eyes_off',
-            'export_status.pending', 'export_status.ready', 'export_status.failed', 'export_status.removed'] as $key) {
+            'export_status.pending', 'export_status.ready', 'export_status.failed', 'export_status.removed',
+            'report.database_error', 'report.other_error', 'rule.null', 'rule.fixed', 'rule.hash', 'rule.token', 'rule.callback', 'rule.callback_unique'] as $key) {
             $this->assertArrayHasKey($key, $english);
         }
 

@@ -6,6 +6,8 @@
     $record = $this->record;
     $running = $record->status === RequestStatus::Erasing;
     $steps = $record->steps()->get()->keyBy('group_key');
+    $person = $record->subject_name ?? Lang::t('plan.subject_unnamed');
+    $address = $record->subject_email ?? $plan?->subjectEmail;
 @endphp
 
 <x-filament-panels::page>
@@ -13,6 +15,15 @@
         <x-filament::section>
             <x-slot name="heading">{{ Lang::t('plan.heading') }}</x-slot>
             <x-slot name="description">{{ Lang::t('plan.irreversible') }}</x-slot>
+
+            @if ($record->hasSubject())
+                <div style="margin-bottom:.75rem">
+                    <p style="font-size:1rem;font-weight:600">{{ Lang::t('plan.subject', ['name' => $person, 'model' => class_basename((string) $record->subject_model), 'id' => (string) $record->subject_id]) }}</p>
+                    @if ($address)
+                        <p class="text-sm" style="overflow-wrap:anywhere">{{ $address }}</p>
+                    @endif
+                </div>
+            @endif
 
             <div class="flex flex-wrap items-center gap-3 text-sm">
                 <x-filament::badge :color="$record->status->color()">{{ $record->status->label() }}</x-filament::badge>
@@ -39,7 +50,7 @@
                     <x-slot name="heading">{{ Lang::t('plan.blocked') }}</x-slot>
                     <ul class="list-disc space-y-1 ps-5 text-sm text-danger-600 dark:text-danger-400">
                         @foreach ($plan->allBlockers() as $blocker)
-                            <li>{{ $blocker->group ? '['.$blocker->group.'] ' : '' }}{{ $blocker->message() }}</li>
+                            <li>{{ $blocker->group ? '['.($plan->group($blocker->group)?->label() ?? class_basename($blocker->group)).'] ' : '' }}{{ $blocker->message() }}</li>
                         @endforeach
                     </ul>
                 </x-filament::section>

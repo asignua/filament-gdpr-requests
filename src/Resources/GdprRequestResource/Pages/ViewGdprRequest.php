@@ -9,6 +9,7 @@ use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Resources\Concerns\HandlesServiceErrors;
+use Asignua\FilamentGdprRequests\Resources\Concerns\WarnsAboutSetup;
 use Asignua\FilamentGdprRequests\Resources\GdprRequestResource;
 use Asignua\FilamentGdprRequests\Services\ExportService;
 use Asignua\FilamentGdprRequests\Services\RequestService;
@@ -30,6 +31,7 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewGdprRequest extends ViewRecord
 {
     use HandlesServiceErrors;
+    use WarnsAboutSetup;
 
     protected static string $resource = GdprRequestResource::class;
 
@@ -198,7 +200,7 @@ class ViewGdprRequest extends ViewRecord
     private function noteAction(): Action
     {
         return Action::make('note')->label(Lang::t('actions.note'))->icon('heroicon-o-pencil-square')
-            ->visible(fn (): bool => $this->mayManage())
+            ->visible(fn (): bool => $this->mayManage() && $this->record->details_purged_at === null)
             ->schema([Textarea::make('note')->label(Lang::t('actions.note'))->required()->rows(3)])
             ->action(function (array $data): void {
                 $this->attempt(fn () => app(RequestService::class)->addNote($this->record, (string) $data['note'], Actor::require()), 'notifications.noted');

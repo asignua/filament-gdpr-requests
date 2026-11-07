@@ -7,6 +7,7 @@ namespace Asignua\FilamentGdprRequests\Resources\GdprRequestResource\Pages;
 use Asignua\FilamentGdprRequests\Enums\RequestChannel;
 use Asignua\FilamentGdprRequests\Enums\RequestType;
 use Asignua\FilamentGdprRequests\Exceptions\GdprException;
+use Asignua\FilamentGdprRequests\Resources\Concerns\WarnsAboutSetup;
 use Asignua\FilamentGdprRequests\Resources\GdprRequestResource;
 use Asignua\FilamentGdprRequests\Services\RequestService;
 use Asignua\FilamentGdprRequests\Support\Gates;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateGdprRequest extends CreateRecord
 {
+    use WarnsAboutSetup;
+
     protected static string $resource = GdprRequestResource::class;
 
     protected function authorizeAccess(): void

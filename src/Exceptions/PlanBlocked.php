@@ -14,5 +14,8 @@ final class PlanBlocked extends GdprException
     public function __construct(public readonly array $blockers)
     {
         parent::__construct(__('filament-gdpr-requests::filament-gdpr-requests.errors.plan_blocked', ['count' => count($blockers)]));
+
+        $this->translationKey = 'errors.plan_blocked';
+        $this->translationParams = ['count' => count($blockers)];
     }
 }

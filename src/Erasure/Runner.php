@@ -159,7 +159,7 @@ final class Runner
             return;
         }
 
-        $step->forceFill(['status' => StepStatus::Failed, 'error' => count($left).' file(s) could not be removed; see the pending list'])->save();
+        $step->forceFill(['status' => StepStatus::Failed, 'error' => Failures::store('errors.files_not_removed', ['count' => count($left)])])->save();
         $this->markPartial($request->getKey(), $groupKey, 'files');
 
         throw GdprException::translated('files_not_removed', ['count' => count($left)]);
@@ -186,7 +186,7 @@ final class Runner
                 'strategy' => $step->strategy ?? '',
                 'status' => StepStatus::Failed,
                 'attempts' => ($step->attempts ?? 0) + 1,
-                'error' => Failures::describe($e),
+                'error' => Failures::encode($e),
             ])->save();
         }
 

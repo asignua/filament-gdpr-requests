@@ -109,7 +109,7 @@ class RealDatabaseTest extends TestCase
         $this->assertSame(['Ada street 1', 'Ada street 2'], Order::query()->where('customer_id', $ada->id)->orderBy('id')->pluck('shipping_address')->all(), 'The failed group rolled back as a whole, including the row before the collision.');
         $failed = $request->steps()->where('group_key', Order::class)->first();
         $this->assertSame(StepStatus::Failed, $failed->status);
-        $this->assertStringStartsWith('Database error (SQLSTATE', (string) $failed->error);
+        $this->assertStringStartsWith('Database error (SQLSTATE', (string) $failed->errorMessage());
         $this->assertStringNotContainsString('same', (string) $failed->error, 'The offending value is not stored in the report.');
 
         $state['collide'] = false;

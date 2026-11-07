@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\Models;
 
+use Asignua\FilamentGdprRequests\Erasure\Failures;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -72,6 +73,11 @@ class GdprRequestExport extends Model
     public function owner(): GdprRequest
     {
         return $this->request ?? throw (new ModelNotFoundException)->setModel(GdprRequest::class, [$this->request_id]);
+    }
+
+    public function errorMessage(): ?string
+    {
+        return Failures::render($this->error);
     }
 
     public function isDownloadable(): bool

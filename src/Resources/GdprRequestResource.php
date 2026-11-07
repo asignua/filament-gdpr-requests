@@ -14,6 +14,7 @@ use Asignua\FilamentGdprRequests\Resources\GdprRequestResource\Pages\CreateGdprR
 use Asignua\FilamentGdprRequests\Resources\GdprRequestResource\Pages\ErasurePlanPage;
 use Asignua\FilamentGdprRequests\Resources\GdprRequestResource\Pages\ListGdprRequests;
 use Asignua\FilamentGdprRequests\Resources\GdprRequestResource\Pages\ViewGdprRequest;
+use Asignua\FilamentGdprRequests\Support\EventDetails;
 use Asignua\FilamentGdprRequests\Support\Gates;
 use Asignua\FilamentGdprRequests\Support\Lang;
 use Filament\Actions\Action;
@@ -178,31 +179,34 @@ class GdprRequestResource extends Resource
                 TextEntry::make('notes')->label(Lang::t('view.notes'))->placeholder('—')->columnSpanFull()->prose(),
             ]),
             Section::make(Lang::t('view.steps'))->visible(fn (GdprRequest $record): bool => $record->steps()->exists())->schema([
-                RepeatableEntry::make('steps')->hiddenLabel()->columns(6)->schema([
+                RepeatableEntry::make('steps')->label(Lang::t('view.steps'))->hiddenLabel()->columns(6)->schema([
                     TextEntry::make('label')->label(Lang::t('plan.entry'))->columnSpan(2),
                     TextEntry::make('strategy')->label(Lang::t('plan.action'))->badge()->formatStateUsing(static fn (string $state): string => Lang::t('action.'.($state === '' ? 'none' : $state))),
                     TextEntry::make('status')->label(Lang::t('view.status'))->badge()->formatStateUsing(fn ($state): string => $state->label())->color(fn ($state): string => $state->color()),
                     TextEntry::make('counts')->label(Lang::t('plan.rows'))
                         ->state(static fn ($record): string => Lang::t('report.counts', ['matched' => $record->matched, 'changed' => $record->changed, 'trashed' => $record->trashed])),
-                    TextEntry::make('error')->label(Lang::t('report.error'))->placeholder('—'),
+                    TextEntry::make('error')->label(Lang::t('report.error'))->placeholder('—')
+                        ->state(static fn ($record): ?string => $record->errorMessage()),
                 ]),
             ]),
             Section::make(Lang::t('view.exports'))->visible(fn (GdprRequest $record): bool => $record->exports()->exists())->schema([
-                RepeatableEntry::make('exports')->hiddenLabel()->columns(4)->schema([
+                RepeatableEntry::make('exports')->label(Lang::t('view.exports'))->hiddenLabel()->columns(5)->schema([
                     TextEntry::make('created_at')->label(Lang::t('view.created'))->dateTime(),
                     TextEntry::make('status')->label(Lang::t('view.status'))->badge()->formatStateUsing(static fn (string $state): string => Lang::t('export_status.'.$state)),
                     TextEntry::make('size')->label(Lang::t('view.size'))->formatStateUsing(static fn ($state): string => number_format(((int) $state) / 1024, 1).' KB'),
                     TextEntry::make('expires_at')->label(Lang::t('view.expires'))->dateTime('Y-m-d')->placeholder('—'),
+                    TextEntry::make('error')->label(Lang::t('report.error'))->placeholder('—')
+                        ->state(static fn ($record): ?string => $record->errorMessage()),
                 ]),
             ]),
             Section::make(Lang::t('view.log'))->collapsible()->schema([
-                RepeatableEntry::make('events')->hiddenLabel()->columns(4)->schema([
+                RepeatableEntry::make('events')->label(Lang::t('view.log'))->hiddenLabel()->columns(4)->schema([
                     TextEntry::make('created_at')->label(Lang::t('view.when'))->dateTime(),
                     TextEntry::make('event')->label(Lang::t('view.event'))->formatStateUsing(fn ($state, $record): string => $record->label()),
                     TextEntry::make('actor_id')->label(Lang::t('view.by'))->placeholder('—')
                         ->formatStateUsing(static fn (?string $state): ?string => $state === null ? null : (self::userOptions()[$state] ?? '#'.$state)),
                     TextEntry::make('context')->label(Lang::t('view.details'))->placeholder('—')
-                        ->state(static fn ($record): ?string => $record->context === null ? null : (json_encode($record->context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null)),
+                        ->state(static fn ($record): ?string => EventDetails::format($record->context)),
                 ]),
             ]),
         ]);

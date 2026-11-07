@@ -93,17 +93,31 @@ provider's `boot()`:
 
 ```php
 use Asignua\FilamentGdprRequests\DataMap\{Erase, PersonalData, Retention, Rule};
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 // The data subject itself (a user, a customer).
 PersonalData::for(Customer::class)
     ->label('Customer')
-    ->subject(email: 'email')                                  // found by primary key; e-mail used to link a request
+    ->subject(email: 'email')                                  // found by primary key; the address e-mail groups match on
     ->export(['id', 'name', 'email', 'phone', 'created_at'])   // exactly these columns, nothing else
     ->erase(Erase::anonymize([
-        'name'  => Rule::fixed('Erased customer'),
-        'email' => Rule::uniqueToken('erased-', '@erased.invalid'),
-        'phone' => Rule::null(),
+        'name'           => Rule::fixed('Erased customer'),
+        'email'          => Rule::uniqueToken('erased-', '@erased.invalid'),
+        'phone'          => Rule::null(),
+        'password'       => Rule::fixed('!'),                  // no hash matches it: nobody can log in any more
+        'remember_token' => Rule::null(),                      // otherwise an old "remember me" cookie still works
     ]));
+
+// Files of spatie/laravel-medialibrary. Writes bypass model events, so the library does not clean up after itself:
+// name the original and every conversion here, or they stay on the disk.
+PersonalData::for(Media::class, 'customer-media')
+    ->label('Uploaded files')
+    ->of(Customer::class)
+    ->matchedUsing(fn ($query, $subject) => $query->where('model_type', (new Customer)->getMorphClass())->where('model_id', $subject->keyValue()))
+    ->export(['id', 'file_name', 'created_at'])
+    ->files(fn (Media $media) => collect(['', ...array_keys(array_filter($media->generated_conversions ?? []))])
+        ->map(fn (string $conversion) => ['disk' => $media->disk, 'path' => $media->getPathRelativeToRoot($conversion)]))
+    ->erase(Erase::delete(files: true));
 
 // Rows that belong to the subject.
 PersonalData::for(Order::class)
@@ -133,6 +147,12 @@ PersonalData::for(Document::class)                           // rows reached thr
 GdprRequests::acknowledge('audit_notes', 'Internal notes, no personal data.');
 ```
 
+> [!WARNING]
+> **Anything that is not in the map stays.** A column without a rule keeps its value, a table without an entry keeps its
+> rows, and a request can still read *Fulfilled*: the plugin finishes what you declared, not what you meant. Go through your
+> schema before the first real erasure, and remember the columns that are easy to forget: password hashes, remember
+> tokens, sessions, API tokens, notifications, media.
+
 How to write it well:
 
 - **One entry per model that holds the person's data**, and one root entry with `subject()`. Declare every column you want
@@ -141,6 +161,9 @@ How to write it well:
 - **Rules** are `Rule::null()`, `Rule::fixed($v)`, `Rule::hash()` (keyed digest, recognises its own output), `Rule::uniqueToken()`
   (for unique columns: derived from table, column and row key, so a rerun gives the same value) and `Rule::using(fn)` (yours;
   it must give the same result when applied to its own output; pass `unique: true` to vouch for a unique column).
+- **The linked record decides who a request is about.** E-mail groups match on the address of the root row, not on what
+  was typed on the request. Declare it with `subject(email: 'email')`: without it, an entry using `matchedByEmail()` blocks
+  the run.
 - **Soft-deleted rows are always included.** Global scopes are removed from every query the plugin runs. `delete` really
   removes rows, soft-deleted ones too.
 - **Writes bypass model events** (an observer must not send mail mid-erasure) and do not touch `updated_at`.
@@ -165,6 +188,9 @@ Before anything can be confirmed, the preview reads your live schema and **block
   another table references;
 - a row you delete is still referenced by rows that are not deleted with it (soft-deleted ones counted);
 - a table that is not in the map references a mapped table (add it, or `GdprRequests::acknowledge()` it);
+- the linked record cannot be found, the address on the request differs from the record's, or an e-mail group has no
+  address to match on. The export is refused for the same reasons. A person settles a difference: link the right record,
+  or use **Accept the record's e-mail** (which removes export archives and asks for the identity check again);
 - an entry has no way to find rows, a table or column does not exist, a rule throws, or the pseudonym key is missing.
 
 ## How a request goes
@@ -173,13 +199,15 @@ Before anything can be confirmed, the preview reads your live schema and **block
    A submitted request is **always unverified**.
 2. **Link the record** by explicit key (or by exact e-mail through the column your map declares).
 3. **Verify the identity**, outside the tool, and write down how in the note. Export and erasure are locked until you do;
-   re-linking the record clears the verification.
+   re-linking the record clears the verification and removes the archives made for the previous one. Once an erasure has
+   changed data, the record can no longer be changed.
 4. **Export** (access and portability): a job builds the archive; **Download** issues a signed link (15 minutes) bound to
    your user.
 5. **Erasure preview, Confirm** (typing the request reference), then **a different person runs it** (typing the
    reference again). `four_eyes` can be switched off for a single administrator; every erasure run while it is off is written
    to the log.
-6. **Report**: one line per entry (found, changed, soft-deleted) and the status of each group.
+6. **Report**: one line per entry (found, changed, soft-deleted) and the status of each group. When all of it finished,
+   every export archive of that person is removed, from their other requests too; only then the request reads *Fulfilled*.
 7. **Close**: the link to the person's record is cut and export archives are removed.
 
 ### Irreversible means irreversible
@@ -191,7 +219,9 @@ Before anything can be confirmed, the preview reads your live schema and **block
 - A confirmation is bound to the data map's rules, to the person and to the row counts you saw. If any of them changed, or
   72 hours passed, confirm again.
 - Files named by the entry are removed after the commit; if one cannot be removed the group stays failed and the list of
-  what is left is kept.
+  what is left is kept. **Resume** retries them, and the group finishes when they are gone.
+- A killed worker cannot leave a request stuck: a failed job moves it to **Partially erased**, and a run that has gone quiet
+  for `erasure.stale_run_minutes` (30) offers **Resume**.
 
 ## Housekeeping commands
 
@@ -208,9 +238,12 @@ Schedule::command('gdpr:prune')->dailyAt('03:30');
 | --- | --- |
 | `gdpr:retention` | Plans the retention policies of the map. **Dry run by default**; changes rows only with `--apply`. No config key turns it on. `--only=<group or model>`. |
 | `gdpr:prune` | Removes expired export archives and wipes name, address, message and notes of requests closed longer than `request_retention_days` ago. `--dry-run` to look first. |
-| `gdpr:remind` | Notifies the assignee `reminders.days_before` days before the deadline and your administrators when it is passed. Define who those are with `GdprRequests::notifyAdminsUsing(fn () => User::...)`. |
+| `gdpr:remind` | Notifies the assignee `reminders.days_before` days before the deadline and your administrators when it is passed. Define who those are with `GdprRequests::notifyAdminsUsing(fn () => User::...)`: **without it nobody but the assignee hears about an overdue request**, and the command warns you. |
 
-Every run is recorded in `gdpr_runs`, dry runs included.
+Every run is recorded in `gdpr_runs`, dry runs included. A file or archive that cannot be deleted is reported, and
+`gdpr:prune` and `gdpr:retention --apply` exit with a failure: an archive stays on record and is retried, and the paths of
+files whose row is gone are in the run's summary. A reminder is marked as sent only if it reached somebody; otherwise the
+next run tries again.
 
 ## What this does NOT cover
 
@@ -236,6 +269,7 @@ Publish with `php artisan vendor:publish --tag=filament-gdpr-requests-config`. T
 | `request_retention_days` | `90` | Days after closing before name, address and notes are wiped. |
 | `extension_max_months` | `2` | Extra months allowed by one extension. |
 | `requester_mail.enabled` | `false` | Stage e-mails to the person (received, extended, completed, refused). |
+| `erasure.stale_run_minutes` | `30` | A run with no sign of life for this long may be resumed. |
 | `queue.connection` / `queue.name` | default | Where the jobs go. |
 
 Tables are `gdpr_requests`, `gdpr_request_events`, `gdpr_request_steps`, `gdpr_request_exports` and `gdpr_runs` (no prefix).
@@ -279,7 +313,9 @@ vendor/bin/pint --test
 
 The suite runs on SQLite. `tests/Database` holds scenarios that need a real server (a genuine unique violation in the
 middle of a run, two processes on one request); they run when `GDPR_TEST_DB=mariadb|pgsql` points at a database
-(`GDPR_TEST_DB_HOST`, `_PORT`, `_NAME`, `_USER`, `_PASSWORD`) and are skipped otherwise.
+(`GDPR_TEST_DB_HOST`, `_PORT`, `_NAME`, `_USER`, `_PASSWORD`) and are skipped otherwise. `GDPR_TEST_FOREIGN_DB` names a
+neighbouring database (a schema on Postgres) with the tables `customers` (one row, `marker = 'sentinel'`), `foreign_only`
+and `foreign_child`, and adds the proof that the schema reader stays inside its own database.
 
 ## AI agents
 

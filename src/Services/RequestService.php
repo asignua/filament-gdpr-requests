@@ -229,6 +229,11 @@ final class RequestService
     {
         Gates::authorize(Gates::MANAGE, $actor);
 
+        // Nothing wipes a request twice: a note written now would stay for ever.
+        if ($this->current($request)->details_purged_at !== null) {
+            throw InvalidTransition::translated('details_purged');
+        }
+
         $note = trim($note);
 
         if ($note === '') {

@@ -165,6 +165,8 @@ final class Planner
         $deletedAt = $selection->deletedAtColumn();
         $until = null;
         $missingDate = false;
+        /** @var array<string, true> $nulled columns a rule really wrote NULL into, callbacks included */
+        $nulled = [];
 
         try {
             foreach ($selection->rows((int) config('filament-gdpr-requests.erasure.chunk', 200)) as $row) {
@@ -174,8 +176,10 @@ final class Planner
                     $plan->trashed++;
                 }
 
-                if ($erase instanceof Anonymize && RowRules::changes($erase, $table, $key, $row) !== []) {
-                    $plan->changing++;
+                if ($erase instanceof Anonymize) {
+                    $changes = RowRules::changes($erase, $table, $key, $row);
+                    $plan->changing += $changes === [] ? 0 : 1;
+                    $nulled += array_fill_keys(array_keys(array_filter($changes, static fn (mixed $value): bool => $value === null)), true);
                 }
 
                 if ($erase instanceof Retain) {
@@ -198,7 +202,7 @@ final class Planner
         }
 
         match (true) {
-            $erase instanceof Anonymize => $this->checkAnonymize($plan, $erase, $schema, $selection),
+            $erase instanceof Anonymize => $this->checkAnonymize($plan, $erase, $schema, $selection, $nulled),
             $erase instanceof Delete => $this->checkDelete($plan, $schema, $selection, $selections),
             $erase instanceof Retain => $this->describeRetain($plan, $erase, $until, $missingDate, isset($columns[$erase->from])),
             default => null,
@@ -219,7 +223,10 @@ final class Planner
         }
     }
 
-    private function checkAnonymize(GroupPlan $plan, Anonymize $erase, Schema $schema, Selection $selection): void
+    /**
+     * @param array<string, true> $nulled
+     */
+    private function checkAnonymize(GroupPlan $plan, Anonymize $erase, Schema $schema, Selection $selection, array $nulled): void
     {
         $table = $selection->table();
         $columns = $schema->columns($table);
@@ -227,7 +234,7 @@ final class Planner
         $entry = $plan->entry;
 
         foreach ($erase->rules as $column => $rule) {
-            $plan->rules[] = $column.' → '.$rule->describe();
+            $plan->rules[] = $column.' → '.$rule->label();
 
             if (!isset($columns[$column])) {
                 $plan->addBlocker('column_missing', ['table' => $table, 'column' => $column]);
@@ -245,11 +252,11 @@ final class Planner
                 $plan->addBlocker('rule_on_match_column', $params);
             }
 
-            if ($rule->kind === Rule::NULL && !(bool) ($columns[$column]['nullable'] ?? true)) {
+            if (($rule->writesNull() || isset($nulled[$column])) && !(bool) ($columns[$column]['nullable'] ?? true)) {
                 $plan->addBlocker('not_null', $params);
             }
 
-            if ($rule->kind !== Rule::NULL && $schema->isForeignKeyColumn($table, $column)) {
+            if (!$rule->writesNull() && $schema->isForeignKeyColumn($table, $column)) {
                 $plan->addBlocker('foreign_key_column', $params);
             }
 
@@ -285,7 +292,7 @@ final class Planner
         $table = $selection->table();
         $indexes = $schema->uniqueIndexesWith($table, $column);
 
-        if ($indexes === [] || $rule->kind === Rule::NULL) {
+        if ($indexes === [] || $rule->writesNull()) {
             return;
         }
 

@@ -106,7 +106,7 @@ final class ExportService
             $export->refresh();
             RequestLog::record($request, 'export_ready', null, ['export' => $export->ulid, 'bytes' => $export->size]);
         } catch (Throwable $e) {
-            $export->forceFill(['status' => GdprRequestExport::FAILED, 'error' => Failures::describe($e)])->save();
+            $export->forceFill(['status' => GdprRequestExport::FAILED, 'error' => Failures::encode($e)])->save();
             RequestLog::record($request, 'export_failed', null, ['export' => $export->ulid]);
 
             throw $e;

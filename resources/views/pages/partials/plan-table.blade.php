@@ -26,39 +26,52 @@
     .dark .gdpr-table .sub { color: rgb(156 163 175); }
     .dark .gdpr-table .err { color: rgb(248 113 113); }
     .gdpr-scroll { overflow-x: auto; }
+    .gdpr-table .sub, .gdpr-table .note { overflow-wrap: anywhere; }
+    /* On a phone every row becomes a card: no column scrolls out of sight, each value says what it is. */
+    @media (max-width: 640px) {
+        .gdpr-table, .gdpr-table tbody, .gdpr-table tr, .gdpr-table td { display: block; width: 100%; }
+        .gdpr-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+        .gdpr-table tr { padding: .5rem 0; border-bottom: 1px solid rgb(229 231 235); }
+        .gdpr-table td { padding: .375rem 0; border-bottom: 0; }
+        .gdpr-table td::before { content: attr(data-label); display: block; font-size: .75rem; letter-spacing: .03em; text-transform: uppercase; color: rgb(107 114 128); }
+        .gdpr-table .num { text-align: start; }
+        .dark .gdpr-table tr { border-color: rgba(255,255,255,.1); }
+        .dark .gdpr-table td::before { color: rgb(156 163 175); }
+    }
 </style>
 
 <div class="gdpr-scroll">
-    <table class="gdpr-table">
-        <thead>
-            <tr>
-                <th>{{ Lang::t('plan.entry') }}</th>
-                <th>{{ Lang::t('plan.action') }}</th>
-                <th class="num">{{ Lang::t('plan.rows') }}</th>
-                <th class="num">{{ Lang::t('plan.trashed') }}</th>
-                <th>{{ Lang::t('plan.details') }}</th>
-                <th>{{ Lang::t('view.status') }}</th>
+    {{-- The roles keep it a table for a screen reader when the phone layout turns its rows into blocks. --}}
+    <table class="gdpr-table" role="table">
+        <thead role="rowgroup">
+            <tr role="row">
+                <th role="columnheader">{{ Lang::t('plan.entry') }}</th>
+                <th role="columnheader">{{ Lang::t('plan.action') }}</th>
+                <th role="columnheader" class="num">{{ Lang::t('plan.rows') }}</th>
+                <th role="columnheader" class="num">{{ Lang::t('plan.trashed') }}</th>
+                <th role="columnheader">{{ Lang::t('plan.details') }}</th>
+                <th role="columnheader">{{ Lang::t('view.status') }}</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody role="rowgroup">
             @foreach ($rows as $row)
                 @php($group = $row['group'])
                 @php($step = $row['step'])
-                <tr>
-                    <td>
+                <tr role="row">
+                    <td role="cell" data-label="{{ Lang::t('plan.entry') }}">
                         <div style="font-weight:500">{{ $row['label'] }}</div>
                         @if ($row['table'])
                             <div class="sub">{{ $row['table'] }}</div>
                         @endif
                     </td>
-                    <td>
+                    <td role="cell" data-label="{{ Lang::t('plan.action') }}">
                         <x-filament::badge :color="match ($row['action']) { 'delete' => 'danger', 'anonymize' => 'warning', 'retain' => 'info', default => 'gray' }">
                             {{ Lang::t('action.'.$row['action']) }}
                         </x-filament::badge>
                     </td>
-                    <td class="num">{{ $row['matched'] }}</td>
-                    <td class="num">{{ $row['trashed'] }}</td>
-                    <td class="note">
+                    <td role="cell" class="num" data-label="{{ Lang::t('plan.rows') }}">{{ $row['matched'] }}</td>
+                    <td role="cell" class="num" data-label="{{ Lang::t('plan.trashed') }}">{{ $row['trashed'] }}</td>
+                    <td role="cell" class="note" data-label="{{ Lang::t('plan.details') }}">
                         @if ($group && $group->action === 'anonymize')
                             <div>{{ Lang::t('plan.would_change', ['count' => $group->changing]) }}</div>
                             @foreach ($group->rules as $rule)
@@ -73,12 +86,12 @@
                             <div>{{ Lang::t('plan.no_rule') }}</div>
                         @endif
                     </td>
-                    <td>
+                    <td role="cell" data-label="{{ Lang::t('view.status') }}">
                         @if ($step)
                             <x-filament::badge :color="$step->status->color()">{{ $step->status->label() }}</x-filament::badge>
                             <div class="note" style="margin-top:.25rem">{{ Lang::t('report.counts', ['matched' => $step->matched, 'changed' => $step->changed, 'trashed' => $step->trashed]) }}</div>
                             @if ($step->error)
-                                <div class="err">{{ $step->error }}</div>
+                                <div class="err">{{ $step->errorMessage() }}</div>
                             @endif
                         @else
                             <span class="sub">—</span>

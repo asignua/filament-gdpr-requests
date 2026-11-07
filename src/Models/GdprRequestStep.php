@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Asignua\FilamentGdprRequests\Models;
 
 use Asignua\FilamentGdprRequests\Enums\StepStatus;
+use Asignua\FilamentGdprRequests\Erasure\Failures;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -33,6 +34,11 @@ class GdprRequestStep extends Model
     protected function casts(): array
     {
         return ['status' => StepStatus::class, 'finished_at' => 'datetime'];
+    }
+
+    public function errorMessage(): ?string
+    {
+        return Failures::render($this->error);
     }
 
     /**
