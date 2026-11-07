@@ -62,8 +62,8 @@ class DatabaseSeeder extends Seeder
             Document::query()->create(['customer_id' => $customer->id, 'title' => 'Signed form', 'disk' => 'local', 'path' => $path]);
         }
 
-        // A soft-deleted order: it must be counted, exported and erased like any other.
-        Order::query()->where('number', 'SO-11')->first()?->delete();
+        // Soft-deleted orders: they must be counted, exported and erased like any other.
+        Order::query()->whereIn('number', ['SO-11', 'SO-31'])->get()->each->delete();
 
         GdprRequests::submit(RequestType::Erasure, 'ada@customer.example', 'Ada Example', 'Please delete everything you hold about me.', RequestChannel::Email);
         GdprRequests::submit(RequestType::Access, 'bruno@customer.example', 'Bruno Sample', 'I would like a copy of my data.', RequestChannel::Web);

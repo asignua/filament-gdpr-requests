@@ -50,7 +50,9 @@ class RealDatabaseTest extends TestCase
         parent::tearDown();
     }
 
-    /** The committed rows must not leak into the next test; the schema (and the migrations table) stay. */
+    /**
+     * The committed rows must not leak into the next test; the schema (and the migrations table) stay.
+     */
     private function emptyAllTables(): void
     {
         $tables = array_values(array_filter(

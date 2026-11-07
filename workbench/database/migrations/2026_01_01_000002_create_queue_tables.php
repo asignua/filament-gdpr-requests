@@ -11,6 +11,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // `testbench serve` ships these tables already; the plain test application does not.
+        if (Schema::hasTable('jobs')) {
+            return;
+        }
+
         Schema::create('jobs', function (Blueprint $table): void {
             $table->id();
             $table->string('queue')->index();

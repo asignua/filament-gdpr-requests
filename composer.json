@@ -1,7 +1,15 @@
 {
     "name": "asignua/filament-gdpr-requests",
-    "description": "TODO: one-sentence description of GDPR Requests for Filament.",
-    "keywords": ["filament", "filament-plugin", "laravel"],
+    "description": "Track GDPR data-subject requests in Filament 5: deadlines, a declared data map, exports, and previewed, four-eyes, idempotent erasure.",
+    "keywords": [
+        "filament",
+        "filament-plugin",
+        "laravel",
+        "gdpr",
+        "privacy",
+        "data-subject-request",
+        "erasure"
+    ],
     "homepage": "https://github.com/asignua/filament-gdpr-requests",
     "support": {
         "issues": "https://github.com/asignua/filament-gdpr-requests/issues",
@@ -17,6 +25,7 @@
     ],
     "require": {
         "php": "^8.3",
+        "ext-zip": "*",
         "filament/filament": "^5.0",
         "illuminate/contracts": "^12.0|^13.0",
         "spatie/laravel-package-tools": "^1.16"
@@ -36,7 +45,8 @@
         "psr-4": {
             "Asignua\\FilamentGdprRequests\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/",
-            "Workbench\\Database\\Factories\\": "workbench/database/factories/"
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
         }
     },
     "extra": {
@@ -58,5 +68,8 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "suggest": {
+        "asignua/filament-activity-log-plus": "Mirrors request actions (structure only) into the audit log under the name \"gdpr\"."
+    }
 }

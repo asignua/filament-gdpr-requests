@@ -73,10 +73,12 @@ class ResourceTest extends TestCase
 
         $page = Livewire::test(ViewGdprRequest::class, ['record' => $request->ulid]);
         $page->assertActionVisible('link')->assertActionVisible('verify');
-        $page->callAction('link', ['model' => Customer::class, 'id' => null, 'email' => 'ada@customer.example']);
+        $page->callAction('link', ['model' => Customer::class, 'id' => null, 'email' => 'ada@customer.example'])
+            ->assertNotified(Lang::t('notifications.linked'));
         $this->assertSame((string) $ada->id, $request->refresh()->subject_id);
 
-        $page->callAction('verify', ['note' => 'Replied from the registered address.']);
+        $page->callAction('verify', ['note' => 'Replied from the registered address.'])
+            ->assertNotified(Lang::t('notifications.verified'));
         $this->assertTrue($request->refresh()->isVerified());
 
         $page->callAction('extend', ['months' => 1, 'reason' => 'Many systems involved']);

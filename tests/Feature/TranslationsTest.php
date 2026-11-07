@@ -73,7 +73,7 @@ class TranslationsTest extends TestCase
                     $full = $prefix.$key;
                     $exists = isset($english[$full]) || isset($english[$full.'.subject']) || ($prefix === '' && str_ends_with($full, '.') === false && isset($english[$full]));
 
-                    if (! $exists) {
+                    if (!$exists) {
                         $missing[] = $full.' ('.basename($file).')';
                     }
                 }

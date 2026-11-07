@@ -37,7 +37,9 @@ namespace {
             return $this;
         }
 
-        /** @param array<string, mixed> $properties */
+        /**
+         * @param array<string, mixed> $properties
+         */
         public function withProperties(array $properties): self
         {
             $this->row['properties'] = $properties;
@@ -62,7 +64,7 @@ namespace {
         }
     }
 
-    if (! function_exists('activity')) {
+    if (!function_exists('activity')) {
         function activity(?string $log = null): FakeActivity
         {
             return new FakeActivity((string) $log);

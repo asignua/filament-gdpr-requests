@@ -1,0 +1,16 @@
+{
+    "shots": [],
+    "covers": [
+        {
+            "html": "../../scripts/art/cover.html",
+            "out": "cover.jpg",
+            "query": {
+                "title": "Data requests, done carefully",
+                "lead": "Track GDPR requests in Filament 5, export a person's declared data, and erase it only after a preview, a typed confirmation and a second pair of eyes.",
+                "chips": "Preview before anything changes|Four eyes|Idempotent, forward-only|Data map in code",
+                "shot": "../../filament-gdpr-requests/art/preview.jpg",
+                "crop": "700,380,2000,1250"
+            }
+        }
+    ]
+}

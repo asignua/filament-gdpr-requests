@@ -14,16 +14,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table): void {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('role')->default('manager');
-            $table->boolean('is_active')->default(true);
-            $table->rememberToken();
-            $table->timestamps();
-        });
+        if (Schema::hasTable('users')) {
+            // `testbench serve` ships its own users table; add what the demo needs to it.
+            Schema::table('users', function (Blueprint $table): void {
+                $table->string('role')->default('manager');
+                $table->boolean('is_active')->default(true);
+            });
+        } else {
+            Schema::create('users', function (Blueprint $table): void {
+                $table->id();
+                $table->string('name');
+                $table->string('email')->unique();
+                $table->string('password');
+                $table->string('role')->default('manager');
+                $table->boolean('is_active')->default(true);
+                $table->rememberToken();
+                $table->timestamps();
+            });
+        }
 
         Schema::create('customers', function (Blueprint $table): void {
             $table->id();

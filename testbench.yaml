@@ -33,7 +33,7 @@ env:
   GDPR_PSEUDONYM_KEY: demo-only-pseudonym-key-0123456789abcdef
   DB_CONNECTION: sqlite
   SESSION_DRIVER: file
-  CACHE_STORE: array
+  CACHE_STORE: file
   QUEUE_CONNECTION: sync
   BROADCAST_CONNECTION: "null"
 
