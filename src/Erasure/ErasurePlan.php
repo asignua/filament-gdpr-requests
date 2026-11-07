@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\Erasure;
 
+use Asignua\FilamentGdprRequests\DataMap\Erase;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
 
 /**
@@ -52,6 +53,21 @@ final class ErasurePlan
         }
 
         return null;
+    }
+
+    /**
+     * Another group deletes from the same table, so rows this one counted may be gone for a good reason: the two
+     * selections can share rows.
+     */
+    public function sharesRowsWithADeletion(GroupPlan $group): bool
+    {
+        foreach ($this->groups as $other) {
+            if ($other !== $group && $other->table() === $group->table() && $other->action === Erase::DELETE) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

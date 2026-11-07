@@ -170,6 +170,11 @@ return [
         'stale_help' => 'Żaden worker nie zgłosił się od ponad :minutes min, mógł zostać zatrzymany. Wznów: ukończone grupy nie są powtarzane.',
         'subject' => 'Usunięcie danych: :name (:model #:id)',
         'subject_unnamed' => 'osoba bez nazwiska we wniosku',
+        'partial_found' => 'Znaleziono przy ponownym sprawdzeniu danych',
+        'finding_remaining' => ':group: wierszy, które według planu miały zniknąć, wciąż jest: :rows.',
+        'finding_files' => ':group: plików, które miały zniknąć, wciąż jest na dysku: :files.',
+        'finding_mismatch' => ':group: wiersze zaplanowane / obsłużone różnią się (:figures).',
+        'finding_plan_changed' => 'Mapa danych zmieniła się w trakcie uruchomienia, więc sprawdzenie nie może poręczyć za to, co potwierdzono. Potwierdź nowy podgląd.',
     ],
     'report' => [
         'counts' => 'znaleziono :matched, zmieniono :changed, miękko usunięto :trashed',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'Powiązany rekord nie ma adresu e-mail do przejęcia.',
         'retention_files_left' => 'Nie udało się usunąć plików (:count); ich ścieżki są w podsumowaniu tego uruchomienia.',
         'details_purged' => 'Szczegóły tego wniosku zostały usunięte, więc nie można już dodawać notatek.',
+        'rows_missing' => ':group: potwierdzenie objęło wierszy: :planned, uruchomienie znalazło: :found. W tej grupie nic nie zmieniono. Sprawdź mapę, otwórz podgląd i potwierdź ponownie.',
     ],
     'blocker' => [
         'no_matcher' => 'Wpis mapy nie mówi, jak znaleźć wiersze osoby (subject(), matchedBy(), matchedByEmail() lub matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'Nie znaleziono powiązanego rekordu :model #:id, więc nie można do niego niczego dopasować.',
         'subject_email_mismatch' => 'Adres e-mail we wniosku różni się od adresu powiązanego rekordu. Zdecyduj, kogo dotyczy wniosek: powiąż właściwy rekord albo przyjmij adres z rekordu.',
         'subject_email_unknown' => ':entry wyszukuje wiersze po adresie e-mail, ale powiązany rekord nie podaje adresu. Zadeklaruj subject(email: ...) w mapie danych i uzupełnij go w rekordzie.',
+        'closure_order' => 'Własne dopasowanie w :table czyta :other, którą to uruchomienie zmienia, a klucze obce wymagają, by :other poszła pierwsza. Jego wierszy nie dałoby się już znaleźć. Dopasuj wiersze inaczej.',
+        'rule_not_repeatable' => 'Callback dla :table.:column zmienia własny wynik, więc gotowego wiersza nie da się odróżnić od niegotowego. Reguła musi zostawiać swój wynik bez zmian.',
     ],
     'requester_mail' => [
         'received' => [
@@ -351,5 +359,10 @@ return [
         'files' => 'nie udało się usunąć plików',
         'yes' => 'tak',
         'no' => 'nie',
+        'remaining' => 'Pozostałe wiersze',
+        'files_left' => 'Pozostałe pliki',
+        'mismatch' => 'Zaplanowano / obsłużono',
+        'blockers' => 'Zablokowane przez',
+        'plan_changed' => 'Zmieniono mapę danych',
     ],
 ];

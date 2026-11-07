@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\Erasure;
 
+use Asignua\FilamentGdprRequests\DataMap\Delete;
 use Asignua\FilamentGdprRequests\DataMap\Retain;
 use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Enums\StepStatus;
@@ -98,6 +99,12 @@ final class Runner
             throw InvalidTransition::translated('plan_changed');
         }
 
+        // Fewer rows than confirmed is not good news: for a closure it means the rows can no longer be reached. They go
+        // on the report as failed; a new preview shows what is there now.
+        if ($group->erases() && $group->matched < (int) $ceiling && !$plan->sharesRowsWithADeletion($group)) {
+            throw GdprException::translated('rows_missing', ['group' => $group->label(), 'planned' => (int) $ceiling, 'found' => $group->matched]);
+        }
+
         $strategy = $group->entry->getErase();
         $result = ['matched' => $group->matched, 'changed' => 0, 'trashed' => $group->trashed, 'files' => []];
         $status = StepStatus::Done;
@@ -110,6 +117,11 @@ final class Runner
             $note = ['basis' => $strategy->basis, 'until' => $group->retainedUntil];
         } else {
             $result = $this->applier->apply($group->selection, $strategy, (int) config('filament-gdpr-requests.erasure.chunk', 200));
+            $handled = $strategy instanceof Delete ? $result['changed'] : $result['matched'];
+
+            if ($handled !== $group->matched) {
+                throw GdprException::translated('rows_missing', ['group' => $group->label(), 'planned' => $group->matched, 'found' => $handled]);
+            }
         }
 
         $step->forceFill([
@@ -123,7 +135,12 @@ final class Runner
             'error' => null,
             'finished_at' => now(),
             'fingerprint' => $confirmed,
-            'detail' => $this->encode(['rows_done' => true, 'files_pending' => $result['files']] + ($note ?? [])),
+            'detail' => $this->encode([
+                'rows_done' => true,
+                'files_pending' => $result['files'],
+                // What this run did, for the last look; not comparable when another group shares the rows.
+                'handled' => $plan->sharesRowsWithADeletion($group) ? null : ($strategy instanceof Delete ? $result['changed'] : $result['matched']),
+            ] + ($note ?? [])),
         ])->save();
 
         RequestLog::record($locked, 'erasure_group_done', null, [

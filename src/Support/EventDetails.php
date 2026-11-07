@@ -46,7 +46,7 @@ final class EventDetails
             is_bool($value) => Lang::t($value ? 'context.yes' : 'context.no'),
             $key === 'group' => self::group((string) $value),
             $key === 'open' => implode(', ', array_map(static fn (mixed $group): string => self::group((string) $group), (array) $value)),
-            $key === 'counts' => self::counts((array) $value),
+            $key === 'counts', $key === 'remaining', $key === 'files_left', $key === 'mismatch' => self::counts((array) $value),
             $key === 'model' => class_basename((string) $value),
             $key === 'type' => Lang::t('type.'.$value),
             $key === 'channel' => Lang::t('channel.'.$value),

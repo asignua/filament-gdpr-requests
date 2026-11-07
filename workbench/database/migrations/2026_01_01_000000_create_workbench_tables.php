@@ -92,5 +92,23 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('customers');
             $table->string('note');
         });
+
+        // A subject with a text key, and rows that hold it with no foreign key to keep the spelling honest.
+        Schema::create('members', function (Blueprint $table): void {
+            $table->string('id', 26)->primary();
+            $table->string('name');
+        });
+
+        Schema::create('member_notes', function (Blueprint $table): void {
+            $table->id();
+            $table->string('member_id', 26);
+            $table->string('body');
+        });
+
+        // Keys set by hand: a row at the very top of the range must not push an AUTO_INCREMENT over the edge.
+        Schema::create('accounts', function (Blueprint $table): void {
+            $table->unsignedBigInteger('id')->primary();
+            $table->string('name');
+        });
     }
 };

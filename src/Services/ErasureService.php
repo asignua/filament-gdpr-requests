@@ -6,7 +6,9 @@ namespace Asignua\FilamentGdprRequests\Services;
 
 use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Erasure\ErasurePlan;
+use Asignua\FilamentGdprRequests\Erasure\Findings;
 use Asignua\FilamentGdprRequests\Erasure\Planner;
+use Asignua\FilamentGdprRequests\Erasure\Rescan;
 use Asignua\FilamentGdprRequests\Exceptions\AlreadyRunning;
 use Asignua\FilamentGdprRequests\Exceptions\InvalidTransition;
 use Asignua\FilamentGdprRequests\Exceptions\NotPermitted;
@@ -28,7 +30,7 @@ use Throwable;
  */
 final class ErasureService
 {
-    public function __construct(private readonly Planner $planner, private readonly ExportService $exports) {}
+    public function __construct(private readonly Planner $planner, private readonly ExportService $exports, private readonly Rescan $rescan) {}
 
     public function plan(GdprRequest $request): ErasurePlan
     {
@@ -124,11 +126,7 @@ final class ErasureService
             throw InvalidTransition::translated('plan_changed');
         }
 
-        foreach ($plan->counts() as $key => $matched) {
-            if ($matched > (int) ($fresh->erasure_plan['counts'][$key] ?? 0)) {
-                throw InvalidTransition::translated('plan_changed');
-            }
-        }
+        $this->assertCoveredByConfirmation($fresh, $plan);
 
         // The atomic claim: only one caller changes the status, so two simultaneous "Run" clicks cannot both start.
         $staleBefore = now()->subMinutes(GdprRequest::staleRunMinutes());
@@ -182,8 +180,10 @@ final class ErasureService
     }
 
     /**
-     * Called by the last job: fulfilled only if every planned group is finished under this plan and no archive of the
-     * person is left. The requester is told after the commit: a mail server has no say in whether data was erased.
+     * Called by the last job. `fulfilled` is not "the steps finished": the data is looked at again, and the request reads
+     * so only if nothing the plan said would go is still there, every group finished under this plan and no archive of
+     * the person is left. Anything else is `partial`, with the list on the request. The requester is told after the
+     * commit: a mail server has no say in whether data was erased.
      */
     public function finalize(int $requestId): void
     {
@@ -201,11 +201,19 @@ final class ErasureService
 
             // Finished means finished under THIS plan, files included; a step of another person never counts.
             $open = array_filter($planned, static fn (string $key): bool => !($steps->get($key)?->isComplete($confirmed) ?? false));
-            $archives = $planned !== [] && $open === [] ? $this->exports->removeAllForSubject($request) : 0;
+            $finished = $planned !== [] && $open === [];
+            $findings = $finished ? $this->rescan->run($request, $steps) : new Findings;
 
-            if ($planned === [] || $open !== [] || $archives > 0) {
-                $request->forceFill(['status' => RequestStatus::Partial])->save();
-                RequestLog::record($request, 'erasure_partial', null, ['open' => array_values($open), 'archives' => $archives]);
+            // The archives go last: while rows are left the request is not done, and the person may still be owed them.
+            $archives = $finished && $findings->isClean() ? $this->exports->removeAllForSubject($request) : 0;
+
+            if (!$finished || !$findings->isClean() || $archives > 0) {
+                $request->forceFill([
+                    'status' => RequestStatus::Partial,
+                    'erasure_plan' => ['findings' => $findings->toArray()] + ($request->erasure_plan ?? []),
+                ])->save();
+
+                RequestLog::record($request, 'erasure_partial', null, ['open' => array_values($open), 'archives' => $archives] + $findings->forLog());
 
                 return null;
             }
@@ -235,6 +243,26 @@ final class ErasureService
 
         if ($moved === 1) {
             RequestLog::record(GdprRequest::query()->findOrFail($requestId), 'erasure_interrupted', null, ['reason' => $e === null ? null : class_basename($e)]);
+        }
+    }
+
+    /**
+     * The confirmation covers the rows it counted. More of them, or a finished group with rows back in it, is data
+     * nobody reviewed; fewer in a group still to run means rows that can no longer be reached.
+     */
+    private function assertCoveredByConfirmation(GdprRequest $request, ErasurePlan $plan): void
+    {
+        $confirmed = (string) ($request->erasure_plan['fingerprint'] ?? '');
+        $steps = $request->steps()->get()->keyBy('group_key');
+
+        foreach ($plan->groups as $group) {
+            $planned = (int) ($request->erasure_plan['counts'][$group->key()] ?? 0);
+            $done = $steps->get($group->key())?->rowsDone($confirmed) ?? false;
+            $vanished = !$done && $group->erases() && $group->matched < $planned && !$plan->sharesRowsWithADeletion($group);
+
+            if ($group->matched > $planned || $vanished || ($done && $group->remaining() > 0)) {
+                throw InvalidTransition::translated('plan_changed');
+            }
         }
     }
 

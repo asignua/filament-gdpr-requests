@@ -170,6 +170,11 @@ return [
         'stale_help' => 'Nessun worker si è fatto vivo da oltre :minutes minuti, potrebbe essere stato terminato. Riprendi: i gruppi finiti non vengono ripetuti.',
         'subject' => 'Cancellazione dei dati di :name (:model #:id)',
         'subject_unnamed' => 'una persona senza nome nella richiesta',
+        'partial_found' => 'Trovato ricontrollando i dati',
+        'finding_remaining' => ':group: :rows riga/righe che il piano doveva eliminare sono ancora presenti.',
+        'finding_files' => ':group: :files file che dovevano sparire sono ancora sul disco.',
+        'finding_mismatch' => ':group: righe previste / trattate diverse (:figures).',
+        'finding_plan_changed' => 'La mappa dei dati è cambiata durante l\'esecuzione, quindi il controllo non può garantire quanto confermato. Conferma la nuova anteprima.',
     ],
     'report' => [
         'counts' => ':matched trovate, :changed modificate, :trashed eliminate logicamente',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'Il record collegato non ha un indirizzo e-mail da adottare.',
         'retention_files_left' => 'Impossibile rimuovere :count file; i percorsi sono nel riepilogo di questa esecuzione.',
         'details_purged' => 'I dettagli di questa richiesta sono stati cancellati, quindi non si possono più aggiungere note.',
+        'rows_missing' => ':group: la conferma contava :planned riga/righe, l\'esecuzione ne ha trovate :found. In questo gruppo non è stato modificato nulla. Controlla la mappa, apri l\'anteprima e conferma di nuovo.',
     ],
     'blocker' => [
         'no_matcher' => 'Una voce non dice come trovare le righe dell\'interessato (subject(), matchedBy(), matchedByEmail() o matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'Il record collegato :model #:id non è stato trovato, quindi non gli si può associare nulla.',
         'subject_email_mismatch' => 'L\'e-mail della richiesta è diversa da quella del record collegato. Decidi a chi si riferisce la richiesta: collega il record corretto o accetta l\'indirizzo del record.',
         'subject_email_unknown' => ':entry trova le righe per e-mail, ma il record collegato non offre alcun indirizzo. Dichiara subject(email: ...) nella mappa dei dati e compilalo nel record.',
+        'closure_order' => 'Una ricerca personalizzata su :table legge :other, che questa esecuzione modifica, e le chiavi esterne impongono di trattare prima :other. Le sue righe non si troverebbero più. Cerca le righe in un altro modo.',
+        'rule_not_repeatable' => 'Il callback su :table.:column modifica il proprio risultato, quindi una riga finita non si distingue da una da fare. Una regola deve lasciare intatto il proprio risultato.',
     ],
     'requester_mail' => [
         'received' => [
@@ -351,5 +359,10 @@ return [
         'files' => 'impossibile rimuovere i file',
         'yes' => 'sì',
         'no' => 'no',
+        'remaining' => 'Righe rimaste',
+        'files_left' => 'File rimasti',
+        'mismatch' => 'Previsto / trattato',
+        'blockers' => 'Bloccato da',
+        'plan_changed' => 'Mappa dei dati modificata',
     ],
 ];

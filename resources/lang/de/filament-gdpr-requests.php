@@ -170,6 +170,11 @@ return [
         'stale_help' => 'Seit mehr als :minutes Minuten hat sich kein Worker gemeldet, er wurde möglicherweise beendet. Setzen Sie fort: Fertige Gruppen werden nicht wiederholt.',
         'subject' => 'Löschung der Daten von :name (:model #:id)',
         'subject_unnamed' => 'eine Person ohne Namen in der Anfrage',
+        'partial_found' => 'Bei der erneuten Prüfung der Daten gefunden',
+        'finding_remaining' => ':group: :rows Zeile(n), die laut Plan verschwinden sollten, sind noch da.',
+        'finding_files' => ':group: :files Datei(en), die weg sein sollten, liegen noch auf dem Datenträger.',
+        'finding_mismatch' => ':group: geplante / bearbeitete Zeilen weichen ab (:figures).',
+        'finding_plan_changed' => 'Die Datenkarte hat sich während des Laufs geändert, die Prüfung kann daher nicht für das Bestätigte einstehen. Bestätigen Sie die neue Vorschau.',
     ],
     'report' => [
         'counts' => ':matched gefunden, :changed geändert, :trashed soft-gelöscht',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'Der verknüpfte Datensatz hat keine E-Mail-Adresse, die übernommen werden kann.',
         'retention_files_left' => ':count Datei(en) konnten nicht entfernt werden; die Pfade stehen in der Zusammenfassung dieses Laufs.',
         'details_purged' => 'Die Details dieser Anfrage wurden gelöscht, daher können keine Notizen mehr hinzugefügt werden.',
+        'rows_missing' => ':group: Die Bestätigung zählte :planned Zeile(n), der Lauf fand :found. In dieser Gruppe wurde nichts geändert. Prüfen Sie die Datenkarte, öffnen Sie die Vorschau und bestätigen Sie erneut.',
     ],
     'blocker' => [
         'no_matcher' => 'Ein Eintrag sagt nicht, wie die Zeilen der Person zu finden sind (subject(), matchedBy(), matchedByEmail() oder matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'Der verknüpfte Datensatz :model #:id wurde nicht gefunden, daher kann ihm nichts zugeordnet werden.',
         'subject_email_mismatch' => 'Die E-Mail-Adresse der Anfrage weicht von der des verknüpften Datensatzes ab. Entscheiden Sie, wen die Anfrage betrifft: Verknüpfen Sie den richtigen Datensatz oder übernehmen Sie die Adresse des Datensatzes.',
         'subject_email_unknown' => ':entry findet Zeilen per E-Mail, aber der verknüpfte Datensatz bietet keine Adresse dafür. Deklarieren Sie subject(email: ...) in der Datenkarte und tragen Sie sie im Datensatz ein.',
+        'closure_order' => 'Eine eigene Suche in :table liest :other, das dieser Lauf ändert, und die Fremdschlüssel verlangen, dass :other zuerst an der Reihe ist. Ihre Zeilen wären nicht mehr auffindbar. Suchen Sie die Zeilen auf andere Weise.',
+        'rule_not_repeatable' => 'Der Callback für :table.:column ändert sein eigenes Ergebnis, sodass eine fertige Zeile nicht von einer unfertigen zu unterscheiden ist. Eine Regel muss ihr eigenes Ergebnis unverändert lassen.',
     ],
     'requester_mail' => [
         'received' => [
@@ -351,5 +359,10 @@ return [
         'files' => 'Dateien konnten nicht entfernt werden',
         'yes' => 'ja',
         'no' => 'nein',
+        'remaining' => 'Verbleibende Zeilen',
+        'files_left' => 'Verbleibende Dateien',
+        'mismatch' => 'Geplant / bearbeitet',
+        'blockers' => 'Blockiert durch',
+        'plan_changed' => 'Datenkarte geändert',
     ],
 ];

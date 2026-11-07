@@ -170,6 +170,11 @@ return [
         'stale_help' => 'Ningún worker ha informado desde hace más de :minutes minutos; puede que se haya detenido. Reanude: los grupos terminados no se repiten.',
         'subject' => 'Borrado de los datos de :name (:model #:id)',
         'subject_unnamed' => 'una persona sin nombre en la solicitud',
+        'partial_found' => 'Encontrado al volver a comprobar los datos',
+        'finding_remaining' => ':group: siguen ahí :rows fila(s) que el plan debía eliminar.',
+        'finding_files' => ':group: siguen en el disco :files archivo(s) que debían desaparecer.',
+        'finding_mismatch' => ':group: las filas previstas / tratadas difieren (:figures).',
+        'finding_plan_changed' => 'El mapa de datos cambió durante la ejecución, así que la comprobación no puede avalar lo confirmado. Confirme la nueva vista previa.',
     ],
     'report' => [
         'counts' => ':matched encontradas, :changed modificadas, :trashed con borrado lógico',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'El registro vinculado no tiene una dirección de correo que adoptar.',
         'retention_files_left' => 'No se pudieron eliminar :count archivo(s); sus rutas están en el resumen de esta ejecución.',
         'details_purged' => 'Los detalles de esta solicitud se borraron, por lo que ya no se pueden añadir notas.',
+        'rows_missing' => ':group: la confirmación contó :planned fila(s), la ejecución encontró :found. No se cambió nada en este grupo. Revise el mapa, abra la vista previa y confirme de nuevo.',
     ],
     'blocker' => [
         'no_matcher' => 'Una entrada no dice cómo encontrar las filas del interesado (subject(), matchedBy(), matchedByEmail() o matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'No se encuentra el registro vinculado :model #:id, por lo que no se le puede asociar nada.',
         'subject_email_mismatch' => 'El correo de la solicitud difiere del correo del registro vinculado. Decida a quién se refiere la solicitud: vincule el registro correcto o acepte la dirección del registro.',
         'subject_email_unknown' => ':entry busca filas por correo, pero el registro vinculado no ofrece ninguna dirección. Declare subject(email: ...) en el mapa de datos y complétela en el registro.',
+        'closure_order' => 'Una búsqueda propia en :table lee :other, que esta ejecución cambia, y las claves foráneas obligan a procesar :other primero. Sus filas ya no podrían encontrarse. Busque las filas de otro modo.',
+        'rule_not_repeatable' => 'El callback de :table.:column cambia su propio resultado, así que una fila terminada no se distingue de una pendiente. Una regla debe dejar intacto su resultado.',
     ],
     'requester_mail' => [
         'received' => [
@@ -351,5 +359,10 @@ return [
         'files' => 'no se pudieron eliminar los archivos',
         'yes' => 'sí',
         'no' => 'no',
+        'remaining' => 'Filas restantes',
+        'files_left' => 'Archivos restantes',
+        'mismatch' => 'Previsto / tratado',
+        'blockers' => 'Bloqueado por',
+        'plan_changed' => 'Mapa de datos cambiado',
     ],
 ];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\Erasure;
 
+use Asignua\FilamentGdprRequests\DataMap\Erase;
 use Asignua\FilamentGdprRequests\DataMap\PersonalData;
 use Asignua\FilamentGdprRequests\DataMap\Selection;
 
@@ -49,6 +50,27 @@ final class GroupPlan
     public function table(): string
     {
         return $this->selection->table();
+    }
+
+    /**
+     * The plan says these rows go or change.
+     */
+    public function erases(): bool
+    {
+        return $this->action === Erase::ANONYMIZE || $this->action === Erase::DELETE;
+    }
+
+    /**
+     * Rows of an erasing group that are not what the plan promised. An anonymized row stays, so it counts only while a
+     * rule would still change it.
+     */
+    public function remaining(): int
+    {
+        return match ($this->action) {
+            Erase::DELETE => $this->matched,
+            Erase::ANONYMIZE => $this->changing,
+            default => 0,
+        };
     }
 
     /**

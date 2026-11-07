@@ -170,6 +170,11 @@ return [
         'stale_help' => 'Geen enkele worker heeft zich meer dan :minutes minuten gemeld; hij is mogelijk gestopt. Hervat: voltooide groepen worden niet herhaald.',
         'subject' => 'Verwijdering van de gegevens van :name (:model #:id)',
         'subject_unnamed' => 'een persoon zonder naam op het verzoek',
+        'partial_found' => 'Gevonden bij de hercontrole van de gegevens',
+        'finding_remaining' => ':group: :rows rij(en) die volgens het plan weg zouden gaan, zijn er nog.',
+        'finding_files' => ':group: :files bestand(en) die weg hadden moeten zijn, staan nog op de schijf.',
+        'finding_mismatch' => ':group: geplande / verwerkte rijen verschillen (:figures).',
+        'finding_plan_changed' => 'De gegevenskaart is tijdens de uitvoering gewijzigd, dus de controle kan niet instaan voor wat is bevestigd. Bevestig het nieuwe voorbeeld.',
     ],
     'report' => [
         'counts' => ':matched gevonden, :changed gewijzigd, :trashed soft-deleted',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'Het gekoppelde record heeft geen e-mailadres om over te nemen.',
         'retention_files_left' => ':count bestand(en) konden niet worden verwijderd; de paden staan in de samenvatting van deze run.',
         'details_purged' => 'De details van dit verzoek zijn gewist, dus er kunnen geen notities meer worden toegevoegd.',
+        'rows_missing' => ':group: de bevestiging telde :planned rij(en), de uitvoering vond er :found. In deze groep is niets gewijzigd. Controleer de kaart, open het voorbeeld en bevestig opnieuw.',
     ],
     'blocker' => [
         'no_matcher' => 'Een item zegt niet hoe de rijen van de betrokkene te vinden zijn (subject(), matchedBy(), matchedByEmail() of matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'Het gekoppelde record :model #:id is niet gevonden, dus er kan niets aan worden gekoppeld.',
         'subject_email_mismatch' => 'Het e-mailadres op het verzoek wijkt af van dat van het gekoppelde record. Bepaal over wie het verzoek gaat: koppel het juiste record of neem het adres van het record over.',
         'subject_email_unknown' => ':entry vindt rijen op e-mail, maar het gekoppelde record biedt geen adres. Declareer subject(email: ...) in de gegevenskaart en vul het in op het record.',
+        'closure_order' => 'Een eigen zoekopdracht op :table leest :other, dat deze uitvoering wijzigt, en de refererende sleutels dwingen af dat :other eerst komt. De rijen zouden niet meer te vinden zijn. Zoek de rijen op een andere manier.',
+        'rule_not_repeatable' => 'De callback op :table.:column wijzigt zijn eigen resultaat, waardoor een afgeronde rij niet te onderscheiden is van een onafgeronde. Een regel moet zijn eigen resultaat met rust laten.',
     ],
     'requester_mail' => [
         'received' => [
@@ -351,5 +359,10 @@ return [
         'files' => 'bestanden konden niet worden verwijderd',
         'yes' => 'ja',
         'no' => 'nee',
+        'remaining' => 'Resterende rijen',
+        'files_left' => 'Resterende bestanden',
+        'mismatch' => 'Gepland / verwerkt',
+        'blockers' => 'Geblokkeerd door',
+        'plan_changed' => 'Gegevenskaart gewijzigd',
     ],
 ];

@@ -170,6 +170,11 @@ return [
         'stale_help' => 'Nenhum worker respondeu há mais de :minutes minutos; ele pode ter sido encerrado. Retome: os grupos concluídos não são repetidos.',
         'subject' => 'Apagamento dos dados de :name (:model #:id)',
         'subject_unnamed' => 'uma pessoa sem nome na solicitação',
+        'partial_found' => 'Encontrado ao verificar os dados novamente',
+        'finding_remaining' => ':group: :rows linha(s) que o plano deveria eliminar ainda estão lá.',
+        'finding_files' => ':group: :files arquivo(s) que deveriam ter sumido ainda estão no disco.',
+        'finding_mismatch' => ':group: linhas previstas / tratadas diferem (:figures).',
+        'finding_plan_changed' => 'O mapa de dados mudou durante a execução, então a verificação não pode garantir o que foi confirmado. Confirme a nova pré-visualização.',
     ],
     'report' => [
         'counts' => ':matched encontradas, :changed alteradas, :trashed com exclusão lógica',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'O registro vinculado não tem um endereço de e-mail para adotar.',
         'retention_files_left' => ':count arquivo(s) não puderam ser removidos; os caminhos estão no resumo desta execução.',
         'details_purged' => 'Os detalhes desta solicitação foram apagados, portanto não é mais possível adicionar notas.',
+        'rows_missing' => ':group: a confirmação contou :planned linha(s), a execução encontrou :found. Nada foi alterado neste grupo. Verifique o mapa, abra a pré-visualização e confirme novamente.',
     ],
     'blocker' => [
         'no_matcher' => 'Uma entrada não diz como encontrar as linhas do titular (subject(), matchedBy(), matchedByEmail() ou matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'O registro vinculado :model #:id não foi encontrado, portanto nada pode ser associado a ele.',
         'subject_email_mismatch' => 'O e-mail da solicitação difere do e-mail do registro vinculado. Decida a quem a solicitação se refere: vincule o registro correto ou aceite o endereço do registro.',
         'subject_email_unknown' => ':entry encontra linhas por e-mail, mas o registro vinculado não oferece endereço. Declare subject(email: ...) no mapa de dados e preencha-o no registro.',
+        'closure_order' => 'Uma busca própria em :table lê :other, que esta execução altera, e as chaves estrangeiras obrigam :other a ir primeiro. Suas linhas não poderiam mais ser encontradas. Busque as linhas de outra forma.',
+        'rule_not_repeatable' => 'O callback em :table.:column altera o próprio resultado, então uma linha concluída não se distingue de uma pendente. Uma regra deve deixar o próprio resultado intacto.',
     ],
     'requester_mail' => [
         'received' => [
@@ -351,5 +359,10 @@ return [
         'files' => 'os arquivos não puderam ser removidos',
         'yes' => 'sim',
         'no' => 'não',
+        'remaining' => 'Linhas restantes',
+        'files_left' => 'Arquivos restantes',
+        'mismatch' => 'Previsto / tratado',
+        'blockers' => 'Bloqueado por',
+        'plan_changed' => 'Mapa de dados alterado',
     ],
 ];

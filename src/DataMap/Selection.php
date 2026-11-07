@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * The rows one map entry selects: for one subject, or (for retention) by an age constraint.
@@ -166,6 +167,28 @@ final class Selection
 
                 $callback($query, $subject);
         }
+    }
+
+    /**
+     * Does finding these rows touch $table? Asked of a closure, which the plugin cannot look inside: the SQL it builds
+     * and any query it runs itself are collected without reaching the database.
+     */
+    public function reads(string $table): bool
+    {
+        $connection = $this->connection();
+        $built = '';
+
+        try {
+            $queries = $connection->pretend(function () use (&$built): void {
+                $built = $this->query()->toBase()->toSql();
+            });
+        } catch (Throwable) {
+            return false; // a closure that cannot run has its own blocker in the preview
+        }
+
+        $text = implode("\n", [$built, ...array_column($queries, 'query')]);
+
+        return preg_match('/(?<![\w$])'.preg_quote($connection->getTablePrefix().$table, '/').'(?![\w$])/i', $text) === 1;
     }
 
     /**

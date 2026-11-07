@@ -1,5 +1,6 @@
 @php
     use Asignua\FilamentGdprRequests\Enums\RequestStatus;
+    use Asignua\FilamentGdprRequests\Erasure\Findings;
     use Asignua\FilamentGdprRequests\Support\Lang;
 
     $plan = $this->getPlan();
@@ -80,6 +81,15 @@
             <x-filament::section icon="heroicon-o-exclamation-triangle" icon-color="danger">
                 <x-slot name="heading">{{ Lang::t('plan.partial') }}</x-slot>
                 <p class="text-sm">{{ Lang::t('plan.partial_help') }}</p>
+
+                @if (($record->erasure_plan['findings'] ?? null) !== null && Findings::fromArray($record->erasure_plan['findings'])->lines() !== [])
+                    <p class="mt-3 text-sm font-medium">{{ Lang::t('plan.partial_found') }}</p>
+                    <ul class="mt-1 list-disc space-y-1 ps-5 text-sm">
+                        @foreach (Findings::fromArray($record->erasure_plan['findings'])->lines() as $line)
+                            <li>{{ $line }}</li>
+                        @endforeach
+                    </ul>
+                @endif
             </x-filament::section>
         @endif
 

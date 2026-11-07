@@ -170,6 +170,11 @@ return [
         'stale_help' => 'Aucun worker ne s\'est manifesté depuis plus de :minutes minutes, il a pu être arrêté. Reprenez : les groupes terminés ne sont pas répétés.',
         'subject' => 'Effacement des données de :name (:model #:id)',
         'subject_unnamed' => 'une personne sans nom sur la demande',
+        'partial_found' => 'Trouvé lors de la nouvelle vérification des données',
+        'finding_remaining' => ':group : :rows ligne(s) que le plan devait traiter sont toujours là.',
+        'finding_files' => ':group : :files fichier(s) qui devaient disparaître sont toujours sur le disque.',
+        'finding_mismatch' => ':group : lignes prévues / traitées différentes (:figures).',
+        'finding_plan_changed' => 'La carte des données a changé pendant l\'exécution : la vérification ne peut garantir ce qui a été confirmé. Confirmez le nouvel aperçu.',
     ],
     'report' => [
         'counts' => ':matched trouvées, :changed modifiées, :trashed en suppression logique',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'L\'enregistrement lié n\'a pas d\'adresse e-mail à reprendre.',
         'retention_files_left' => ':count fichier(s) n\'ont pas pu être supprimés ; leurs chemins figurent dans le résumé de cette exécution.',
         'details_purged' => 'Les détails de cette demande ont été effacés : il n\'est plus possible d\'ajouter des notes.',
+        'rows_missing' => ':group : la confirmation comptait :planned ligne(s), l\'exécution en a trouvé :found. Rien n\'a été modifié dans ce groupe. Vérifiez la carte, ouvrez l\'aperçu et confirmez de nouveau.',
     ],
     'blocker' => [
         'no_matcher' => 'Une entrée ne dit pas comment retrouver les lignes de la personne (subject(), matchedBy(), matchedByEmail() ou matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'L\'enregistrement lié :model #:id est introuvable : rien ne peut lui être rattaché.',
         'subject_email_mismatch' => 'L\'adresse de la demande diffère de celle de l\'enregistrement lié. Décidez qui est concerné : liez le bon enregistrement ou acceptez l\'adresse de l\'enregistrement.',
         'subject_email_unknown' => ':entry trouve les lignes par e-mail, mais l\'enregistrement lié n\'offre aucune adresse. Déclarez subject(email: ...) dans la carte des données et renseignez-la sur l\'enregistrement.',
+        'closure_order' => 'Une recherche personnalisée sur :table lit :other, que cette exécution modifie, et les clés étrangères imposent de traiter :other en premier. Ses lignes seraient introuvables. Recherchez-les autrement.',
+        'rule_not_repeatable' => 'Le callback sur :table.:column modifie son propre résultat : une ligne terminée ne se distingue plus d\'une ligne non traitée. Une règle doit laisser son résultat intact.',
     ],
     'requester_mail' => [
         'received' => [
@@ -351,5 +359,10 @@ return [
         'files' => 'les fichiers n\'ont pas pu être supprimés',
         'yes' => 'oui',
         'no' => 'non',
+        'remaining' => 'Lignes restantes',
+        'files_left' => 'Fichiers restants',
+        'mismatch' => 'Prévu / traité',
+        'blockers' => 'Bloqué par',
+        'plan_changed' => 'Carte des données modifiée',
     ],
 ];

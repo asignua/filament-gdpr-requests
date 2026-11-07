@@ -170,6 +170,11 @@ return [
         'stale_help' => ':minutes dakikadan uzun süredir hiçbir işçi yanıt vermedi, durdurulmuş olabilir. Devam ettirin: tamamlanan gruplar tekrarlanmaz.',
         'subject' => ':name verilerinin silinmesi (:model #:id)',
         'subject_unnamed' => 'talepte adı olmayan bir kişi',
+        'partial_found' => 'Veriler yeniden denetlenirken bulundu',
+        'finding_remaining' => ':group: planın kaldıracağını söylediği :rows satır hâlâ duruyor.',
+        'finding_files' => ':group: silinmesi gereken :files dosya hâlâ diskte.',
+        'finding_mismatch' => ':group: planlanan / işlenen satırlar farklı (:figures).',
+        'finding_plan_changed' => 'Veri haritası çalıştırma sırasında değişti, bu yüzden denetim onaylananı doğrulayamaz. Yeni önizlemeyi onaylayın.',
     ],
     'report' => [
         'counts' => ':matched bulundu, :changed değişti, :trashed yumuşak silindi',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'Bağlı kayıtta devralınacak bir e-posta adresi yok.',
         'retention_files_left' => ':count dosya kaldırılamadı; yolları bu çalıştırmanın özetinde yer alıyor.',
         'details_purged' => 'Bu talebin ayrıntıları silindi, bu nedenle artık not eklenemez.',
+        'rows_missing' => ':group: onay :planned satır saymıştı, çalıştırma :found satır buldu. Bu grupta hiçbir şey değiştirilmedi. Haritayı kontrol edin, önizlemeyi açın ve yeniden onaylayın.',
     ],
     'blocker' => [
         'no_matcher' => 'Bir giriş, ilgili kişinin satırlarının nasıl bulunacağını söylemiyor (subject(), matchedBy(), matchedByEmail() veya matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'Bağlı kayıt :model #:id bulunamadı, bu nedenle ona hiçbir şey eşleştirilemez.',
         'subject_email_mismatch' => 'Talepteki e-posta, bağlı kaydın e-postasından farklı. Talebin kimi ilgilendirdiğine karar verin: doğru kaydı bağlayın veya kaydın adresini kabul edin.',
         'subject_email_unknown' => ':entry satırları e-postayla buluyor, ancak bağlı kayıt eşleştirilecek bir adres sunmuyor. Veri haritasında subject(email: ...) tanımlayın ve kayıtta doldurun.',
+        'closure_order' => ':table üzerindeki özel eşleştirme, bu çalıştırmanın değiştirdiği :other tablosunu okuyor ve yabancı anahtarlar önce :other işlenmesini zorunlu kılıyor. Satırları artık bulunamaz. Satırları başka bir yolla eşleştirin.',
+        'rule_not_repeatable' => ':table.:column üzerindeki geri çağırım kendi çıktısını değiştiriyor, bu yüzden biten satır bitmemiş olandan ayırt edilemez. Kural kendi sonucuna dokunmamalıdır.',
     ],
     'requester_mail' => [
         'received' => [
@@ -351,5 +359,10 @@ return [
         'files' => 'dosyalar kaldırılamadı',
         'yes' => 'evet',
         'no' => 'hayır',
+        'remaining' => 'Kalan satırlar',
+        'files_left' => 'Kalan dosyalar',
+        'mismatch' => 'Planlanan / işlenen',
+        'blockers' => 'Engelleyen',
+        'plan_changed' => 'Veri haritası değişti',
     ],
 ];

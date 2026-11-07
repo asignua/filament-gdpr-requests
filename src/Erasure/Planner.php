@@ -81,7 +81,9 @@ final class Planner
             $groups[] = $plan;
         }
 
-        $groups = $this->order($groups, $schema);
+        $readers = $this->closureReaders($groups);
+        $groups = $this->order($groups, $schema, $readers);
+        $this->checkClosureOrder($groups, $readers);
 
         return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema)], $model.'#'.$request->subject_id, $subject->email, $keyVersion);
     }
@@ -167,6 +169,8 @@ final class Planner
         $missingDate = false;
         /** @var array<string, true> $nulled columns a rule really wrote NULL into, callbacks included */
         $nulled = [];
+        /** @var array<string, true> $unrepeatable columns whose callback changes its own output */
+        $unrepeatable = [];
 
         try {
             foreach ($selection->rows((int) config('filament-gdpr-requests.erasure.chunk', 200)) as $row) {
@@ -180,6 +184,7 @@ final class Planner
                     $changes = RowRules::changes($erase, $table, $key, $row);
                     $plan->changing += $changes === [] ? 0 : 1;
                     $nulled += array_fill_keys(array_keys(array_filter($changes, static fn (mixed $value): bool => $value === null)), true);
+                    $unrepeatable += array_fill_keys(RowRules::unrepeatable($erase, $table, $key, $row, $changes), true);
                 }
 
                 if ($erase instanceof Retain) {
@@ -199,6 +204,11 @@ final class Planner
             $plan->addBlocker('rule_error', ['table' => $table, 'error' => class_basename($e)]);
 
             return $plan;
+        }
+
+        // The last look asks the rules whether a row is done: one that never settles would read as left over for ever.
+        foreach (array_keys($unrepeatable) as $column) {
+            $plan->addBlocker('rule_not_repeatable', ['table' => $table, 'column' => $column]);
         }
 
         match (true) {
@@ -451,13 +461,60 @@ final class Planner
     }
 
     /**
-     * Rows that reference others go first, so a parent is never removed while a child still points at it.
+     * A closure can only be trusted to find its rows while the tables it reads are untouched, so it runs before any
+     * group that changes them.
      *
      * @param list<GroupPlan> $groups
      *
+     * @return array<string, list<string>> group => closure groups that read its table
+     */
+    private function closureReaders(array $groups): array
+    {
+        $readers = [];
+
+        foreach ($groups as $reader) {
+            if ($reader->entry->getMatchKind() !== PersonalData::MATCH_CLOSURE) {
+                continue;
+            }
+
+            foreach ($groups as $target) {
+                if ($target->table() !== $reader->table() && $target->erases() && $reader->selection->reads($target->table())) {
+                    $readers[$target->key()][] = $reader->key();
+                }
+            }
+        }
+
+        return $readers;
+    }
+
+    /**
+     * Foreign keys can want the opposite order. Then nothing can make the closure right, and a person has to look.
+     *
+     * @param list<GroupPlan>             $groups  in execution order
+     * @param array<string, list<string>> $readers
+     */
+    private function checkClosureOrder(array $groups, array $readers): void
+    {
+        $position = array_flip(array_map(static fn (GroupPlan $group): string => $group->key(), $groups));
+
+        foreach ($groups as $reader) {
+            foreach ($groups as $target) {
+                if (in_array($reader->key(), $readers[$target->key()] ?? [], true) && $position[$reader->key()] > $position[$target->key()]) {
+                    $reader->addBlocker('closure_order', ['table' => $reader->table(), 'other' => $target->table()]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Rows that reference others go first, so a parent is never removed while a child still points at it.
+     *
+     * @param list<GroupPlan>             $groups
+     * @param array<string, list<string>> $readers group => closure groups that read its table
+     *
      * @return list<GroupPlan>
      */
-    private function order(array $groups, Schema $schema): array
+    private function order(array $groups, Schema $schema, array $readers): array
     {
         $byTable = [];
 
@@ -469,7 +526,7 @@ final class Planner
 
         foreach ($groups as $group) {
             $table = $group->table();
-            $dependsOn[$group->key()] = [];
+            $dependsOn[$group->key()] = array_fill_keys($readers[$group->key()] ?? [], true);
 
             if (!$schema->hasTable($table)) {
                 continue;

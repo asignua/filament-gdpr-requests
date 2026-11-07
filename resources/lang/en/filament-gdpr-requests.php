@@ -170,6 +170,11 @@ return [
         'stale_help' => 'No worker has reported for more than :minutes minutes, so it may have been killed. Resume to continue: finished groups are not repeated.',
         'subject' => 'Erasure of :name (:model #:id)',
         'subject_unnamed' => 'a person with no name on the request',
+        'partial_found' => 'Found when the data was checked again',
+        'finding_remaining' => ':group: :rows row(s) the plan said would go are still there.',
+        'finding_files' => ':group: :files file(s) that should be gone are still on the disk.',
+        'finding_mismatch' => ':group: rows planned / handled differ (:figures).',
+        'finding_plan_changed' => 'The data map changed during the run, so the check cannot vouch for what was confirmed. Confirm the new preview.',
     ],
     'report' => [
         'counts' => ':matched found, :changed changed, :trashed soft-deleted',
@@ -260,6 +265,7 @@ return [
         'record_email_unavailable' => 'The linked record has no e-mail address to take over.',
         'retention_files_left' => ':count file(s) could not be removed; their paths are in the summary of this run.',
         'details_purged' => 'The details of this request were wiped, so notes can no longer be added.',
+        'rows_missing' => ':group: the confirmation counted :planned row(s), the run found :found. Nothing of this group was changed. Check the map, open the preview and confirm again.',
     ],
     'blocker' => [
         'no_matcher' => 'An entry does not say how to find the subject\'s rows (subject(), matchedBy(), matchedByEmail() or matchedUsing()).',
@@ -288,6 +294,8 @@ return [
         'subject_row_missing' => 'The linked record :model #:id cannot be found, so nothing can be matched to it.',
         'subject_email_mismatch' => 'The e-mail on the request differs from the e-mail of the linked record. Decide who the request is about: link the right record, or accept the record\'s address.',
         'subject_email_unknown' => ':entry finds rows by e-mail, but the linked record offers no address to match on. Declare subject(email: ...) in the data map and fill it in on the record.',
+        'closure_order' => 'A custom match on :table reads :other, which this run changes, and the foreign keys force :other to go first. Its rows could not be found any more. Match the rows another way.',
+        'rule_not_repeatable' => 'The callback on :table.:column changes its own output, so a finished row can never be told from an unfinished one. A rule must leave its own result alone.',
     ],
     'requester_mail' => [
         'received' => ['subject' => 'We received your request (:reference)', 'line' => 'We received your data request. Your reference is :reference. We will answer by :date.'],
@@ -333,5 +341,10 @@ return [
         'files' => 'files could not be removed',
         'yes' => 'yes',
         'no' => 'no',
+        'remaining' => 'Rows left',
+        'files_left' => 'Files left',
+        'mismatch' => 'Planned / handled',
+        'blockers' => 'Blocked by',
+        'plan_changed' => 'Data map changed',
     ],
 ];
