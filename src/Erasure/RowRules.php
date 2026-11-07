@@ -77,17 +77,35 @@ final class RowRules
 
         $new = self::storable($new);
 
-        if (is_numeric($old) && is_numeric($new)) {
-            return (float) $old === (float) $new;
-        }
-
         $old = (string) $old;
         $new = (string) $new;
 
         return $old === $new
+            || self::sameNumber($old, $new)
             || rtrim($old, ' ') === rtrim($new, ' ') // CHAR(n) comes back padded
             || self::sameMoment($old, $new)
             || self::sameJson($old, $new);
+    }
+
+    /**
+     * Compared as text: past 2^53 a float cannot tell two numbers apart, and a masked card or account number differs from
+     * the original only in the digits a float rounds away. `5.0` is `5`, `007` is `7`.
+     */
+    private static function sameNumber(string $old, string $new): bool
+    {
+        $canonical = static function (string $number): ?string {
+            if (preg_match('/\A([+-]?)0*(\d+?)(?:\.(\d*?)0*)?\z/', $number, $parts) !== 1) {
+                return null;
+            }
+
+            $digits = $parts[2].(($parts[3] ?? '') === '' ? '' : '.'.$parts[3]);
+
+            return ($parts[1] === '-' && $digits !== '0' ? '-' : '').$digits;
+        };
+
+        $left = $canonical($old);
+
+        return $left !== null && $left === $canonical($new);
     }
 
     /**

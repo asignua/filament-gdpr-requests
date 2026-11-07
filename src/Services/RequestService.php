@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Asignua\FilamentGdprRequests\Services;
 
 use Asignua\FilamentGdprRequests\DataMap\PersonalDataRegistry;
+use Asignua\FilamentGdprRequests\DataMap\Subject;
 use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Enums\RequestChannel;
 use Asignua\FilamentGdprRequests\Enums\RequestStatus;
@@ -336,18 +337,26 @@ final class RequestService
         }
 
         $prototype = new ($root->model);
+        $integer = $prototype->getKeyType() === 'int';
 
-        if ($prototype->getKeyType() === 'int' && !ctype_digit($id)) {
-            throw GdprException::translated('subject_not_found');
+        if ($integer) {
+            $id = ltrim($id, '0') ?: '0';
+
+            // Past the range there is nothing to ask the database: Postgres would fail the whole transaction, and an
+            // unsigned MariaDB key is found and then comes back clamped to the top of the range, as somebody else's row.
+            if (!ctype_digit($id) || !Subject::fitsInteger($id)) {
+                throw GdprException::translated('subject_not_found');
+            }
         }
 
         try {
-            $key = $root->model::query()->withoutGlobalScopes()->whereKey($id)->value($prototype->getKeyName());
+            // The base builder: the model would cast the key to int before anyone could compare it.
+            $key = $root->model::query()->withoutGlobalScopes()->whereKey($id)->toBase()->value($prototype->getKeyName());
         } catch (QueryException) {
             $key = null; // the value does not even fit the column
         }
 
-        if (!is_scalar($key)) {
+        if (!is_scalar($key) || ($integer && (string) $key !== $id)) {
             throw GdprException::translated('subject_not_found');
         }
 

@@ -168,6 +168,12 @@ final class Selection
     {
         $table = $this->table();
 
+        if ($subject->overflows()) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
         switch ($this->entry->getMatchKind()) {
             case PersonalData::MATCH_SUBJECT:
                 $query->where($table.'.'.$this->keyName(), $subject->keyValue());
