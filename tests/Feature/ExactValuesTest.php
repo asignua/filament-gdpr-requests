@@ -40,7 +40,7 @@ class ExactValuesTest extends TestCase
     {
         $this->registry()->flush();
         PersonalData::for(Account::class)->subject()->export(['id', 'name'])->erase(Erase::anonymize(['name' => Rule::fixed('Erased')]));
-        Account::query()->create(['id' => self::TOP, 'name' => 'Top of the range']);
+        DB::table('accounts')->insert(['id' => self::TOP, 'name' => 'Top of the range']);
 
         // An unsigned key goes further than PHP can count; Postgres has no such thing.
         if (DB::getDriverName() === 'mariadb') {

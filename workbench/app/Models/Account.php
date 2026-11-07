@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Account extends Model
 {
-    public $incrementing = false;
-
     public $timestamps = false;
 
     protected $table = 'accounts';
