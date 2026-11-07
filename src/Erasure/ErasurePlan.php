@@ -16,6 +16,7 @@ final class ErasurePlan
     public function __construct(
         public readonly array $groups,
         public readonly array $blockers = [],
+        public readonly string $subjectKey = '',
     ) {}
 
     /**
@@ -49,11 +50,12 @@ final class ErasurePlan
     }
 
     /**
-     * Hash of the map's rules in play. A confirmation is only valid while this is unchanged.
+     * Hash of the map's rules in play and of WHO is being erased. A confirmation is only valid while this is
+     * unchanged, so neither a changed rule nor a re-linked subject can ride on an old confirmation.
      */
     public function fingerprint(): string
     {
-        return hash('sha256', implode("\n", array_map(
+        return hash('sha256', $this->subjectKey."\n".implode("\n", array_map(
             static fn (GroupPlan $group): string => $group->entry->definitionSignature(),
             $this->groups,
         )));

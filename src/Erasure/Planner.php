@@ -76,7 +76,7 @@ final class Planner
 
         $groups = $this->order($groups, $schema);
 
-        return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema)]);
+        return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema)], $model.'#'.$request->subject_id);
     }
 
     /**

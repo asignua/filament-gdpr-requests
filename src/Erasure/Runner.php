@@ -81,6 +81,11 @@ final class Runner
             throw new PlanBlocked([...$plan->blockers, ...$group->blockers]);
         }
 
+        // Same subject as at confirmation (the fingerprint holds model#id) and the same rules.
+        if (($locked->erasure_plan['fingerprint'] ?? null) !== $plan->fingerprint()) {
+            throw InvalidTransition::translated('plan_changed');
+        }
+
         $ceiling = $locked->erasure_plan['counts'][$groupKey] ?? null;
 
         if ($ceiling === null || $group->matched > (int) $ceiling) {

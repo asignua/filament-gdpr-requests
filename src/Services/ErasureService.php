@@ -86,6 +86,10 @@ final class ErasureService
 
         $fresh = GdprRequest::query()->whereKey($request->getKey())->firstOrFail();
         $resuming = $fresh->status === RequestStatus::Partial || $this->isStale($fresh);
+
+        if ($fresh->status === RequestStatus::Erasing && ! $resuming) {
+            throw AlreadyRunning::translated('already_running');
+        }
         $actorId = (string) $actor->getAuthIdentifier();
         $fourEyes = (bool) config('filament-gdpr-requests.four_eyes', true);
 

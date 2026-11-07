@@ -16,7 +16,6 @@ use Asignua\FilamentGdprRequests\Services\ErasureService;
 use Asignua\FilamentGdprRequests\Tests\Support\Shop;
 use Asignua\FilamentGdprRequests\Tests\TestCase;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Workbench\App\Models\Customer;
@@ -45,11 +44,33 @@ class RealDatabaseTest extends TestCase
     protected function tearDown(): void
     {
         if (in_array(env('GDPR_TEST_DB'), ['mariadb', 'pgsql'], true)) {
-            Schema::dropAllTables();
-            RefreshDatabaseState::$migrated = false;
+            $this->emptyAllTables();
         }
 
         parent::tearDown();
+    }
+
+    /** The committed rows must not leak into the next test; the schema (and the migrations table) stay. */
+    private function emptyAllTables(): void
+    {
+        $tables = array_values(array_filter(
+            array_map(static fn (array $table): string => (string) $table['name'], Schema::getTables()),
+            static fn (string $name): bool => $name !== 'migrations',
+        ));
+
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('TRUNCATE '.implode(', ', array_map(static fn (string $t): string => '"'.$t.'"', $tables)).' RESTART IDENTITY CASCADE');
+
+            return;
+        }
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
+        foreach ($tables as $table) {
+            DB::statement('TRUNCATE TABLE `'.$table.'`');
+        }
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     private function confirmedErasure(Customer $customer): GdprRequest

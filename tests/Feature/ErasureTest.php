@@ -11,6 +11,7 @@ use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Enums\RequestType;
 use Asignua\FilamentGdprRequests\Enums\StepStatus;
 use Asignua\FilamentGdprRequests\Erasure\Runner;
+use Asignua\FilamentGdprRequests\Exceptions\AlreadyRunning;
 use Asignua\FilamentGdprRequests\Exceptions\InvalidTransition;
 use Asignua\FilamentGdprRequests\Exceptions\NotPermitted;
 use Asignua\FilamentGdprRequests\Exceptions\PlanBlocked;
@@ -200,7 +201,7 @@ class ErasureTest extends TestCase
         // Another worker holds the request: status erasing with a fresh heartbeat.
         $request->forceFill(['status' => RequestStatus::Erasing, 'erasure_heartbeat_at' => now()])->save();
 
-        $this->expectException(InvalidTransition::class);
+        $this->expectException(AlreadyRunning::class);
 
         $this->execute($request);
     }
@@ -298,6 +299,29 @@ class ErasureTest extends TestCase
         $this->expectException(InvalidTransition::class);
 
         $this->execute($request);
+    }
+
+    public function test_a_confirmation_does_not_carry_over_to_another_subject(): void
+    {
+        $dpo = $this->user('dpo', 'Confirmer');
+        $ada = Shop::customer('Ada', 'ada@customer.example');
+        $bruno = Shop::customer('Bruno', 'bruno@customer.example');
+        $request = $this->erasure($ada);
+        $this->confirm($request);
+
+        // Somebody re-points the request behind the confirmation's back (the service would refuse; the database does not).
+        $request->forceFill(['subject_id' => (string) $bruno->id])->save();
+
+        try {
+            $this->execute($request);
+            $this->fail('The old confirmation must not erase another person.');
+        } catch (InvalidTransition) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->assertSame('Bruno', $bruno->fresh()->name);
+        $this->assertSame('Ada', $ada->fresh()->name);
+        $this->assertNotNull($dpo);
     }
 
     public function test_an_old_confirmation_expires(): void
