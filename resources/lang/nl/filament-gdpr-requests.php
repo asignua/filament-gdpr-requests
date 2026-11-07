@@ -369,5 +369,6 @@ return [
         'blockers' => 'Geblokkeerd door',
         'plan_changed' => 'Gegevenskaart gewijzigd',
         'previous' => 'Eerdere uitvoeringen',
+        'automatic' => 'Automatisch',
     ],
 ];

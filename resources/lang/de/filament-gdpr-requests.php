@@ -369,5 +369,6 @@ return [
         'blockers' => 'Blockiert durch',
         'plan_changed' => 'Datenkarte geändert',
         'previous' => 'Frühere Läufe',
+        'automatic' => 'Automatisch',
     ],
 ];

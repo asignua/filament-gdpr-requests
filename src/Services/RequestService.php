@@ -301,6 +301,11 @@ final class RequestService
     {
         Gates::authorize(Gates::MANAGE, $actor);
 
+        // A finished erasure closed itself; a second close would restart the clock on what it still holds.
+        if ($this->current($request)->closed_at !== null) {
+            throw InvalidTransition::translated('cannot_close');
+        }
+
         DB::transaction(function () use ($request, $actor): void {
             $this->transition($request, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::Fulfilled, RequestStatus::Refused], [
                 'status' => RequestStatus::Closed->value,

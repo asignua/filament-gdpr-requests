@@ -369,5 +369,6 @@ return [
         'blockers' => 'Engelleyen',
         'plan_changed' => 'Veri haritası değişti',
         'previous' => 'Önceki çalıştırmalar',
+        'automatic' => 'Otomatik olarak',
     ],
 ];

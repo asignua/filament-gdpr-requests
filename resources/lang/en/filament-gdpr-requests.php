@@ -351,5 +351,6 @@ return [
         'blockers' => 'Blocked by',
         'plan_changed' => 'Data map changed',
         'previous' => 'Earlier runs',
+        'automatic' => 'Automatically',
     ],
 ];

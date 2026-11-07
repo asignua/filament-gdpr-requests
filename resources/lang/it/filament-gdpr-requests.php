@@ -369,5 +369,6 @@ return [
         'blockers' => 'Bloccato da',
         'plan_changed' => 'Mappa dei dati modificata',
         'previous' => 'Esecuzioni precedenti',
+        'automatic' => 'Automaticamente',
     ],
 ];

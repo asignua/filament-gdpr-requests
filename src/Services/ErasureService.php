@@ -241,8 +241,18 @@ final class ErasureService
                 return null;
             }
 
-            $request->forceFill(['status' => RequestStatus::Fulfilled, 'erasure_finished_at' => now()])->save();
+            // It closes itself: nobody has a reason to come back to it, and until a request is closed its name, address
+            // and notes never expire. The status keeps saying how it ended; the plan stays, it holds no person.
+            $request->forceFill([
+                'status' => RequestStatus::Fulfilled,
+                'erasure_finished_at' => now(),
+                'closed_at' => now(),
+                'subject_model' => null,
+                'subject_id' => null,
+            ])->save();
+
             RequestLog::record($request, 'erasure_finished', null, ['groups' => count($planned)]);
+            RequestLog::record($request, 'closed', null, ['automatic' => true]);
 
             return $request;
         });
