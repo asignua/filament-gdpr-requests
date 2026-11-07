@@ -85,7 +85,7 @@ final class Planner
         $groups = $this->order($groups, $schema, $readers);
         $this->checkClosureOrder($groups, $readers);
 
-        return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema)], $model.'#'.$request->subject_id, $subject->email, $keyVersion);
+        return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema, $entries)], $model.'#'.$request->subject_id, $subject->email, $keyVersion);
     }
 
     /**
@@ -100,7 +100,9 @@ final class Planner
         $plan = $this->inspect($entry, $selection, $action, $schema, [$entry->group => $selection], false);
 
         if ($action instanceof Delete) {
-            foreach ($this->unmappedReferences([$plan], $schema) as $blocker) {
+            $subject = $entry->subjectModel();
+
+            foreach ($this->unmappedReferences([$plan], $schema, $subject === null ? [$entry] : $this->registry->forSubject($subject)) as $blocker) {
                 $plan->blockers[] = $blocker;
             }
         }
@@ -159,6 +161,11 @@ final class Planner
             $plan->addBlocker('files_resolver_missing');
         }
 
+        // The row is the only thing that knows where its file is: once it is gone the file can never be found again.
+        if ($erase instanceof Delete && !$erase->removesFiles() && $entry->getFiles() !== null) {
+            $plan->addBlocker('files_left_behind', ['table' => $table]);
+        }
+
         if ($plan->isBlocked()) {
             return $plan;
         }
@@ -204,6 +211,12 @@ final class Planner
             $plan->addBlocker('rule_error', ['table' => $table, 'error' => class_basename($e)]);
 
             return $plan;
+        }
+
+        $loose = $selection->looseRows();
+
+        if ($loose > 0) {
+            $plan->addBlocker('loose_match', ['table' => $table, 'column' => (string) ($entry->getMatchColumn() ?? $key), 'rows' => $loose]);
         }
 
         // The last look asks the rules whether a row is done: one that never settles would read as left over for ever.
@@ -415,17 +428,19 @@ final class Planner
     }
 
     /**
-     * Tables that reference a mapped table but are in neither the map nor the acknowledged list.
+     * Tables that reference a mapped table but are in neither this subject's map nor the acknowledged list. A table
+     * mapped for another subject is outside this map: nothing in this run would touch its rows.
      *
-     * @param list<GroupPlan> $groups
+     * @param list<GroupPlan>    $groups
+     * @param list<PersonalData> $entries the map of the subject in question
      *
      * @return list<Blocker>
      */
-    private function unmappedReferences(array $groups, Schema $schema): array
+    private function unmappedReferences(array $groups, Schema $schema, array $entries): array
     {
         $mapped = [];
 
-        foreach ($this->registry->all() as $entry) {
+        foreach ($entries as $entry) {
             $mapped[(new ($entry->model))->getTable()] = true;
         }
 

@@ -297,6 +297,8 @@ return [
         'closure_order' => 'Een eigen zoekopdracht op :table leest :other, dat deze uitvoering wijzigt, en de refererende sleutels dwingen af dat :other eerst komt. De rijen zouden niet meer te vinden zijn. Zoek de rijen op een andere manier.',
         'rule_not_repeatable' => 'De callback op :table.:column wijzigt zijn eigen resultaat, waardoor een afgeronde rij niet te onderscheiden is van een onafgeronde. Een regel moet zijn eigen resultaat met rust laten.',
         'subject_email_shared' => ':rows records in deze tabel hebben dit adres, dus daaruit blijkt niet van wie welke rijen zijn. Corrigeer eerst de records; tot die tijd wordt er niets mee gezocht.',
+        'files_left_behind' => 'Rijen van :table noemen bestanden, maar bij verwijderen blijven die achter en verwijst er niets meer naar. Gebruik Erase::delete(files: true).',
+        'loose_match' => ':rows rij(en) van :table bevatten in :column bijna de sleutel van deze persoon (andere hoofdletters of spaties). De plugin vergelijkt exact en kan niet zeggen of ze van deze persoon zijn. Corrigeer die rijen.',
     ],
     'requester_mail' => [
         'received' => [

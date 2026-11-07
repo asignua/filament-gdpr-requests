@@ -297,6 +297,8 @@ return [
         'closure_order' => 'Własne dopasowanie w :table czyta :other, którą to uruchomienie zmienia, a klucze obce wymagają, by :other poszła pierwsza. Jego wierszy nie dałoby się już znaleźć. Dopasuj wiersze inaczej.',
         'rule_not_repeatable' => 'Callback dla :table.:column zmienia własny wynik, więc gotowego wiersza nie da się odróżnić od niegotowego. Reguła musi zostawiać swój wynik bez zmian.',
         'subject_email_shared' => 'Rekordów z tym adresem w tabeli: :rows, więc nie wiadomo, czyje są wiersze. Najpierw popraw rekordy; do tego czasu nic nie jest po nim dopasowywane.',
+        'files_left_behind' => 'Wiersze :table wskazują pliki, ale ich usunięcie zostawi te pliki i nic już na nie nie wskaże. Użyj Erase::delete(files: true).',
+        'loose_match' => 'Wierszy :table z niemal tym samym kluczem osoby w :column (inna wielkość liter lub odstępy): :rows. Wtyczka porównuje dokładnie i nie wie, czyje są. Popraw te wiersze.',
     ],
     'requester_mail' => [
         'received' => [

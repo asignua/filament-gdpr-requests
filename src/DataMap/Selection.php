@@ -25,6 +25,11 @@ final class Selection
 {
     private readonly Model $prototype;
 
+    /** What the last rows() kept and dropped. */
+    private int $accepted = 0;
+
+    private int $rejected = 0;
+
     /**
      * @param Closure(Builder<Model>): void|null $constraint extra narrowing, used by retention
      */
@@ -94,21 +99,46 @@ final class Selection
 
     /**
      * Every selected row as a raw array, ordered by key and read in chunks. Rows that fail the exact comparison
-     * are dropped.
+     * are dropped, and counted: see looseRows().
      *
      * @return Generator<int, array<string, mixed>>
      */
     public function rows(int $chunk = 200): Generator
     {
         $key = $this->keyName();
+        $this->accepted = 0;
+        $this->rejected = 0;
 
         foreach ($this->query()->toBase()->select($this->table().'.*')->lazyById($chunk, $this->table().'.'.$key, $key) as $row) {
             $row = (array) $row;
 
             if ($this->accepts($row)) {
+                $this->accepted++;
+
                 yield $row;
+            } else {
+                $this->rejected++;
             }
         }
+    }
+
+    /**
+     * Rows of the last complete rows() that nearly hold the subject's key: the SQL took them and the exact comparison did
+     * not, or (where the driver's `=` is strict, so the SQL never saw them) only case or padding keeps them apart. Whether
+     * such a row is this person's is not for the plugin to guess, and neither erasing nor skipping it is safe.
+     */
+    public function looseRows(): int
+    {
+        $subject = $this->subject;
+
+        if ($subject === null || $this->entry->getMatchKind() !== PersonalData::MATCH_COLUMN || !is_string($subject->keyValue())) {
+            return $this->rejected;
+        }
+
+        $query = $this->entry->model::query()->withoutGlobalScopes();
+        Sql::whereNormalizedEquals($query, $this->table().'.'.$this->entry->getMatchColumn(), (string) Pseudonym::normalizeEmail($subject->id));
+
+        return max($this->rejected, $query->count() - $this->accepted);
     }
 
     /**

@@ -297,6 +297,8 @@ return [
         'closure_order' => 'Eine eigene Suche in :table liest :other, das dieser Lauf ändert, und die Fremdschlüssel verlangen, dass :other zuerst an der Reihe ist. Ihre Zeilen wären nicht mehr auffindbar. Suchen Sie die Zeilen auf andere Weise.',
         'rule_not_repeatable' => 'Der Callback für :table.:column ändert sein eigenes Ergebnis, sodass eine fertige Zeile nicht von einer unfertigen zu unterscheiden ist. Eine Regel muss ihr eigenes Ergebnis unverändert lassen.',
         'subject_email_shared' => ':rows Datensätze dieser Tabelle haben diese Adresse, sie lässt also nicht erkennen, wem welche Zeilen gehören. Korrigieren Sie zuerst die Datensätze; bis dahin wird nichts darüber gefunden.',
+        'files_left_behind' => 'Zeilen von :table nennen Dateien, beim Löschen blieben diese zurück und nichts würde mehr auf sie verweisen. Verwenden Sie Erase::delete(files: true).',
+        'loose_match' => ':rows Zeile(n) von :table enthalten in :column fast den Schlüssel dieser Person (andere Schreibweise oder Leerzeichen). Das Plugin vergleicht exakt und kann nicht sagen, ob sie ihr gehören. Korrigieren Sie diese Zeilen.',
     ],
     'requester_mail' => [
         'received' => [

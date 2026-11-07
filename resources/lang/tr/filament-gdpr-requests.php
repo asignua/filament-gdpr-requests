@@ -297,6 +297,8 @@ return [
         'closure_order' => ':table üzerindeki özel eşleştirme, bu çalıştırmanın değiştirdiği :other tablosunu okuyor ve yabancı anahtarlar önce :other işlenmesini zorunlu kılıyor. Satırları artık bulunamaz. Satırları başka bir yolla eşleştirin.',
         'rule_not_repeatable' => ':table.:column üzerindeki geri çağırım kendi çıktısını değiştiriyor, bu yüzden biten satır bitmemiş olandan ayırt edilemez. Kural kendi sonucuna dokunmamalıdır.',
         'subject_email_shared' => 'Bu tabloda :rows kayıt bu adrese sahip, dolayısıyla satırların kime ait olduğu anlaşılamıyor. Önce kayıtları düzeltin; o zamana kadar bu adresle hiçbir şey eşleştirilmez.',
+        'files_left_behind' => ':table satırları dosyaları gösteriyor, ancak silinirlerse bu dosyalar kalır ve artık hiçbir şey onları göstermez. Erase::delete(files: true) kullanın.',
+        'loose_match' => ':table tablosunda :column içinde bu kişinin anahtarına neredeyse eşit :rows satır var (farklı büyük/küçük harf veya boşluk). Eklenti tam eşleşme arar ve bunların kime ait olduğunu söyleyemez. Bu satırları düzeltin.',
     ],
     'requester_mail' => [
         'received' => [

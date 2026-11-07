@@ -297,6 +297,8 @@ return [
         'closure_order' => 'Une recherche personnalisée sur :table lit :other, que cette exécution modifie, et les clés étrangères imposent de traiter :other en premier. Ses lignes seraient introuvables. Recherchez-les autrement.',
         'rule_not_repeatable' => 'Le callback sur :table.:column modifie son propre résultat : une ligne terminée ne se distingue plus d\'une ligne non traitée. Une règle doit laisser son résultat intact.',
         'subject_email_shared' => ':rows enregistrements de cette table ont cette adresse : elle ne permet pas de savoir à qui sont les lignes. Corrigez d\'abord les enregistrements ; d\'ici là, rien n\'est recherché par elle.',
+        'files_left_behind' => 'Les lignes de :table désignent des fichiers, mais les supprimer laisserait ces fichiers sans plus aucune référence. Utilisez Erase::delete(files: true).',
+        'loose_match' => ':rows ligne(s) de :table ont dans :column presque la clé de cette personne (casse ou espaces différents). Le plugin compare exactement et ne peut dire si elles sont à elle. Corrigez ces lignes.',
     ],
     'requester_mail' => [
         'received' => [

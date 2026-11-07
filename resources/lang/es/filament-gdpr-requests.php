@@ -297,6 +297,8 @@ return [
         'closure_order' => 'Una búsqueda propia en :table lee :other, que esta ejecución cambia, y las claves foráneas obligan a procesar :other primero. Sus filas ya no podrían encontrarse. Busque las filas de otro modo.',
         'rule_not_repeatable' => 'El callback de :table.:column cambia su propio resultado, así que una fila terminada no se distingue de una pendiente. Una regla debe dejar intacto su resultado.',
         'subject_email_shared' => ':rows registros de esta tabla tienen esta dirección, así que no indica de quién son las filas. Corrija primero los registros; hasta entonces no se busca nada por ella.',
+        'files_left_behind' => 'Las filas de :table nombran archivos, pero al borrarlas esos archivos quedarían sin ninguna referencia. Use Erase::delete(files: true).',
+        'loose_match' => ':rows fila(s) de :table tienen en :column casi la clave de esta persona (otras mayúsculas o espacios). El plugin compara exactamente y no puede saber si son suyas. Corrija esas filas.',
     ],
     'requester_mail' => [
         'received' => [

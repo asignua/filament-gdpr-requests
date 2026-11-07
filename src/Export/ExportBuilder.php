@@ -7,6 +7,7 @@ namespace Asignua\FilamentGdprRequests\Export;
 use Asignua\FilamentGdprRequests\DataMap\PersonalDataRegistry;
 use Asignua\FilamentGdprRequests\DataMap\Selection;
 use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
+use Asignua\FilamentGdprRequests\Erasure\Blocker;
 use Asignua\FilamentGdprRequests\Exceptions\GdprException;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Support\Schema;
@@ -93,6 +94,15 @@ final class ExportBuilder
 
                 fwrite($handle, $rows === 0 ? ']' : "\n]");
                 fclose($handle);
+
+                $loose = $selection->looseRows();
+
+                if ($loose > 0) {
+                    $blocker = new Blocker('loose_match', ['table' => $selection->table(), 'column' => (string) ($entry->getMatchColumn() ?? $selection->keyName()), 'rows' => $loose]);
+
+                    throw GdprException::translated('export_blocked', ['reason' => $blocker->message()]);
+                }
+
                 $zipFiles[$name] = $work.'/'.$name;
                 $manifest['groups'][] = ['label' => $entry->getLabel(), 'rows' => $rows, 'file' => $name];
             }
