@@ -23,6 +23,8 @@ use Asignua\FilamentGdprRequests\Support\Environment;
 use Asignua\FilamentGdprRequests\Support\Gates;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -58,7 +60,8 @@ final class ErasureService
         Environment::assertSupported();
         $this->assertEligible($request);
 
-        if (!in_array($request->status, [RequestStatus::InProgress, RequestStatus::ErasureConfirmed, RequestStatus::Partial], true)) {
+        // A run nobody finishes is `partial` in all but name, and the same way forward has to exist for it.
+        if (!in_array($request->status, [RequestStatus::InProgress, RequestStatus::ErasureConfirmed, RequestStatus::Partial], true) && !$request->isStaleRun()) {
             throw InvalidTransition::translated('cannot_confirm');
         }
 
@@ -71,8 +74,7 @@ final class ErasureService
         $rootChanged = $this->subjects->rootChanged($request);
 
         DB::transaction(function () use ($request, $actor, $plan, $rootChanged): void {
-            $claimed = GdprRequest::query()->whereKey($request->getKey())
-                ->whereIn('status', [RequestStatus::InProgress->value, RequestStatus::ErasureConfirmed->value, RequestStatus::Partial->value])
+            $claimed = $this->claimable($request, [RequestStatus::InProgress, RequestStatus::ErasureConfirmed, RequestStatus::Partial])
                 ->update([
                     'status' => RequestStatus::ErasureConfirmed->value,
                     'erasure_confirmed_at' => now(),
@@ -152,19 +154,11 @@ final class ErasureService
         $this->assertCoveredByConfirmation($fresh, $plan);
 
         // The atomic claim: only one caller changes the status, so two simultaneous "Run" clicks cannot both start.
-        $staleBefore = now()->subMinutes(GdprRequest::staleRunMinutes());
-        $claimed = GdprRequest::query()->whereKey($fresh->getKey())
-            ->where(function ($query) use ($staleBefore): void {
-                $query->whereIn('status', [RequestStatus::ErasureConfirmed->value, RequestStatus::Partial->value])
-                    ->orWhere(function ($stale) use ($staleBefore): void {
-                        $stale->where('status', RequestStatus::Erasing->value)
-                            ->where(function ($beat) use ($staleBefore): void {
-                                $beat->whereNull('erasure_heartbeat_at')->orWhere('erasure_heartbeat_at', '<', $staleBefore);
-                            });
-                    });
-            })
+        $claimed = $this->claimable($fresh, [RequestStatus::ErasureConfirmed, RequestStatus::Partial])
             ->update([
                 'status' => RequestStatus::Erasing->value,
+                // What the last run found is about the last run.
+                'erasure_plan' => json_encode(Arr::except($fresh->erasure_plan, 'findings'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'erasure_started_at' => now(),
                 'erasure_started_by' => $actorId,
                 'erasure_heartbeat_at' => now(),
@@ -277,6 +271,30 @@ final class ErasureService
         if ($moved === 1) {
             RequestLog::record(GdprRequest::query()->findOrFail($requestId), 'erasure_interrupted', null, ['reason' => $e === null ? null : class_basename($e)]);
         }
+    }
+
+    /**
+     * The request while it is in one of $statuses, or in a run that has gone quiet: decided by the database, so that two
+     * callers cannot both win.
+     *
+     * @param list<RequestStatus> $statuses
+     *
+     * @return Builder<GdprRequest>
+     */
+    private function claimable(GdprRequest $request, array $statuses): Builder
+    {
+        $staleBefore = now()->subMinutes(GdprRequest::staleRunMinutes());
+
+        return GdprRequest::query()->whereKey($request->getKey())
+            ->where(function ($query) use ($statuses, $staleBefore): void {
+                $query->whereIn('status', array_map(static fn (RequestStatus $status): string => $status->value, $statuses))
+                    ->orWhere(function ($stale) use ($staleBefore): void {
+                        $stale->where('status', RequestStatus::Erasing->value)
+                            ->where(function ($beat) use ($staleBefore): void {
+                                $beat->whereNull('erasure_heartbeat_at')->orWhere('erasure_heartbeat_at', '<', $staleBefore);
+                            });
+                    });
+            });
     }
 
     /**

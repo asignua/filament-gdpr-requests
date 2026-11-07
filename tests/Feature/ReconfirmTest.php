@@ -222,6 +222,48 @@ class ReconfirmTest extends TestCase
         $this->assertFalse(Storage::disk('stuck')->exists('docs/ada.txt'), 'The row that named the file is long gone; the step still knew.');
     }
 
+    public function test_a_run_that_went_quiet_can_be_confirmed_again_too(): void
+    {
+        $request = $this->confirmed(Shop::customer('Ada', 'ada@customer.example'));
+        $this->runGroups($request);
+        Ticket::query()->create(['customer_email' => 'ada@customer.example', 'subject' => 'Late', 'body' => 'Still here']);
+        $request->forceFill(['erasure_heartbeat_at' => now()->subHours(2)])->save();
+
+        try {
+            $this->execute($request);
+            $this->fail('Nobody confirmed the late row.');
+        } catch (InvalidTransition) {
+            $this->addToAssertionCount(1);
+        }
+
+        app(ErasureService::class)->confirm($request->refresh(), $this->user('dpo', 'Second confirmer'));
+        $this->execute($request);
+
+        $this->assertSame(RequestStatus::Fulfilled, $request->refresh()->status);
+        $this->assertSame(0, Ticket::query()->where('customer_email', 'ada@customer.example')->count());
+    }
+
+    public function test_a_run_still_alive_cannot_be_confirmed_over(): void
+    {
+        $request = $this->confirmed(Shop::customer('Ada', 'ada@customer.example'));
+        $request->forceFill(['status' => RequestStatus::Erasing, 'erasure_heartbeat_at' => now()])->save();
+
+        $this->expectException(InvalidTransition::class);
+
+        app(ErasureService::class)->confirm($request, $this->user('dpo', 'Second confirmer'));
+    }
+
+    public function test_an_old_finding_does_not_outlive_the_run_that_made_it(): void
+    {
+        $request = $this->partialWithALateTicket(Shop::customer('Ada', 'ada@customer.example'));
+        Ticket::query()->where('body', 'Still here')->delete();
+
+        $this->execute($request);
+
+        $this->assertSame(RequestStatus::Fulfilled, $request->refresh()->status);
+        $this->assertArrayNotHasKey('findings', $request->erasure_plan);
+    }
+
     public function test_a_partial_request_stays_on_the_same_person_and_cannot_be_refused_away(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');

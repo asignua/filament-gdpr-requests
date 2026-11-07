@@ -95,7 +95,7 @@ class ErasurePlanPage extends Page
     private function confirmAction(): Action
     {
         return Action::make('confirm')->label(Lang::t('plan.confirm'))->icon('heroicon-o-check-badge')->color('warning')
-            ->visible(fn (): bool => in_array($this->gdprRequest()->status, [RequestStatus::InProgress, RequestStatus::ErasureConfirmed, RequestStatus::Partial], true))
+            ->visible(fn (): bool => in_array($this->gdprRequest()->status, [RequestStatus::InProgress, RequestStatus::ErasureConfirmed, RequestStatus::Partial], true) || $this->gdprRequest()->isStaleRun())
             ->disabled(fn (): bool => !$this->gdprRequest()->isVerified() || ($this->getPlan()?->isBlocked() ?? true))
             ->modalHeading(Lang::t('plan.confirm'))
             ->modalDescription(Lang::t('plan.confirm_help'))
