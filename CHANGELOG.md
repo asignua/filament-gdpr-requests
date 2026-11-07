@@ -34,6 +34,31 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   MariaDB), foreign keys across databases included. This was the cause of the intermittent real-database test errors.
 - Notes are refused after the details were wiped.
 
+- **`fulfilled` means the data was looked at again, not that the steps finished.** Finalisation re-plans for the same
+  person. A row the plan said would go, a file that should be gone, a mismatch of rows planned and handled, a changed map
+  or a blocker keep the request `partial`, with a precise list on the erasure page and in the log.
+- A first run that finds fewer rows than confirmed fails the group. Closure groups run before the tables they read; when
+  foreign keys forbid that, the preview blocks. A callback that changes its own output blocks the preview.
+- **Several records behind one address block erasure and export**, soft-deleted ones included. Ada's erasure could delete
+  Eve's ticket and Ada's export could hold it. An address that turns up on another record after the root was erased stops
+  the run too.
+- **One normal form for an address on every driver.** SQL's TRIM strips spaces only, so tab, newline, CR and no-break space
+  survived an erasure. The characters are now one list for PHP and SQL; on SQLite PHP itself answers, because its LOWER
+  knows only ASCII. The pseudonym of an address with such characters changes accordingly.
+- A table mapped only for another subject no longer passes as mapped, in the retention plan either.
+- `files()` with `Erase::delete()` blocks: the file was orphaned and the request read `fulfilled`.
+- Rows that hold almost the key (case, padding) block erasure and export instead of vanishing silently, on every driver.
+- **`partial` has a way forward.** After a new row or a fixed map, resume, confirm, refuse and relink were all refused. A
+  fresh preview and confirmation now work from `partial` and from a run that went quiet, four eyes included. Every group
+  runs again; step figures add up, the earlier result stays in the step's `detail`, files still owed stay owed, and the
+  log keeps every round. Relinking and refusing stay refused once rows are gone.
+- **A fulfilled erasure closes itself**: `closed_at` is set and the link cut at finalisation, so `gdpr:prune` can wipe the
+  name, address and notes. The status stays `fulfilled`; a second close is refused.
+- Keys past PHP's integer range are refused before any query and match nothing: they clamped to row
+  9223372036854775807 on unsigned MariaDB keys and aborted the transaction on Postgres. Keys are compared as text.
+- Rule output is compared as text, so a masked 19-digit value counts as changed. A date in a datetime column, reordered
+  json and padded `char` values count as unchanged.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

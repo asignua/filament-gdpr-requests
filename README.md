@@ -128,7 +128,7 @@ PersonalData::for(Order::class)
 
 PersonalData::for(Ticket::class)
     ->of(Customer::class)
-    ->matchedByEmail('customer_email')                         // exact match after trim + lowercase
+    ->matchedByEmail('customer_email')                         // exact match after trim (any white space) + lowercase
     ->erase(Erase::delete());
 
 PersonalData::for(Invoice::class)
@@ -187,10 +187,19 @@ Before anything can be confirmed, the preview reads your live schema and **block
 - a rule targets the primary key, the column the rows are found by, a foreign-key column (other than `NULL`) or a column
   another table references;
 - a row you delete is still referenced by rows that are not deleted with it (soft-deleted ones counted);
-- a table that is not in the map references a mapped table (add it, or `GdprRequests::acknowledge()` it);
+- a row you delete names files through `files()` and the strategy does not remove them: use `Erase::delete(files: true)`,
+  because the row is the only thing that knows where its file is;
+- a table that is not in this subject's map references a mapped table (add it, or `GdprRequests::acknowledge()` it). A table
+  mapped only for another subject does not count;
+- a callback changes its own output: the check after the run could never tell a finished row from an unfinished one;
+- a `matchedUsing()` query reads a table this run changes and foreign keys force that table to go first. Otherwise such a
+  closure simply runs before the group it reads;
+- rows hold almost the person's key (other letter case, padding): the plugin matches exactly and does not guess whose they
+  are. The export is refused for the same reason. Correct the rows;
 - the linked record cannot be found, the address on the request differs from the record's, or an e-mail group has no
-  address to match on. The export is refused for the same reasons. A person settles a difference: link the right record,
-  or use **Accept the record's e-mail** (which removes export archives and asks for the identity check again);
+  address to match on, or several records share that address (soft-deleted ones too), since it could not tell whose rows
+  are whose. The export is refused for the same reasons. A person settles a difference: link the right record, or use
+  **Accept the record's e-mail** (which removes export archives and asks for the identity check again);
 - an entry has no way to find rows, a table or column does not exist, a rule throws, or the pseudonym key is missing.
 
 ## How a request goes
@@ -206,9 +215,13 @@ Before anything can be confirmed, the preview reads your live schema and **block
 5. **Erasure preview, Confirm** (typing the request reference), then **a different person runs it** (typing the
    reference again). `four_eyes` can be switched off for a single administrator; every erasure run while it is off is written
    to the log.
-6. **Report**: one line per entry (found, changed, soft-deleted) and the status of each group. When all of it finished,
+6. **Check**: when the groups are done the plan is built again for the same person. Any row the plan said would go, any
+   file that should be gone, or any difference between rows planned and handled keeps the request **Partially erased**,
+   with the list on the erasure page and in the log. Retained rows do not count: the plan said they stay.
+7. **Report**: one line per entry (found, changed, soft-deleted) and the status of each group. When the check is clean,
    every export archive of that person is removed, from their other requests too; only then the request reads *Fulfilled*.
-7. **Close**: the link to the person's record is cut and export archives are removed.
+8. **Close**: a fulfilled erasure closes itself: the link to the person's record is cut and the `request_retention_days`
+   clock starts. Every other request is closed by hand, which cuts the link and removes the archives the same way.
 
 ### Irreversible means irreversible
 
@@ -217,7 +230,13 @@ Before anything can be confirmed, the preview reads your live schema and **block
   one request take turns. If a group fails, the request becomes **Partially erased** (never a success), the groups that
   finished stay finished, and **Resume** only goes forward. A rerun of a finished group changes nothing.
 - A confirmation is bound to the data map's rules, to the person and to the row counts you saw. If any of them changed, or
-  72 hours passed, confirm again.
+  72 hours passed, confirm again. A first run that finds fewer rows than you confirmed fails the group: rows that cannot be
+  reached are no good news.
+- New rows or a fixed map after a partial run: **Resume** refuses, and the way forward is a fresh preview and **Confirm**,
+  four eyes included. Every group runs again under the new plan; what the earlier run did stays on the report and in the
+  log. A partial erasure cannot be relinked or refused: its rows are gone.
+- The check sees what the map can reach. A `matchedUsing()` closure that reads a table the run erased finds nothing
+  afterwards, so rows added to such a group after that table was erased stay out of sight. Match on a column where you can.
 - Files named by the entry are removed after the commit; if one cannot be removed the group stays failed and the list of
   what is left is kept. **Resume** retries them, and the group finishes when they are gone.
 - A killed worker cannot leave a request stuck: a failed job moves it to **Partially erased**, and a run that has gone quiet
