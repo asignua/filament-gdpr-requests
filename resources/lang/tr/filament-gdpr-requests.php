@@ -128,6 +128,8 @@ return [
         'refuse_help' => 'Reddedilme nedenini kaydedin. Kişiyi bundan ve şikâyet hakkından haberdar edin.',
         'close' => 'Talebi kapat',
         'close_help' => 'Talebi kişinin kaydından ayırır ve dışa aktarım arşivlerini kaldırır. Ad ve adres saklama süresinden sonra silinir.',
+        'accept_record_email' => 'Kaydın e-postasını kabul et',
+        'accept_record_email_help' => 'Talep, bağlı kaydın adresini kullanacak. Dışa aktarma arşivleri kaldırılır ve kimliğin yeniden doğrulanması gerekir.',
     ],
     'plan' => [
         'title' => '#:reference numaralı talebin silinmesi',
@@ -191,6 +193,7 @@ return [
         'export_failed' => 'Dışa aktarım başarısız',
         'export_link_issued' => 'İndirme bağlantısı verildi',
         'export_downloaded' => 'Dışa aktarım indirildi',
+        'record_email_accepted' => 'Kaydın e-postası kabul edildi',
     ],
     'notifications' => [
         'failed' => 'İşlem başarısız oldu',
@@ -206,6 +209,7 @@ return [
         'closed' => 'Talep kapatıldı',
         'confirmed' => 'Silme onaylandı. Şimdi ikinci bir kişi çalıştırabilir.',
         'started' => 'Silme başladı',
+        'record_email_accepted' => 'Kaydın e-postası artık talepte. Kimliği yeniden doğrulayın.',
     ],
     'errors' => [
         'not_permitted' => 'Bunu yapmaya yetkiniz yok (:ability).',
@@ -242,6 +246,10 @@ return [
         'subject_not_found' => 'Böyle bir kayıt yok.',
         'subject_not_mapped' => 'Bu kayıt türü veri haritasında bildirilmemiş.',
         'wrong_type' => 'Bu talep türü işleme izin vermiyor.',
+        'erasure_started_locked' => 'Silme işlemi bağlı kaydın verilerini zaten değiştirdi. Yalnızca devam ettirilebilir.',
+        'export_blocked' => 'Dışa aktarma oluşturulamıyor: :reason',
+        'export_not_removed' => ':count dışa aktarma arşivi kaldırılamadı, bu nedenle hiçbir şey değiştirilmedi. Yeniden deneyin.',
+        'record_email_unavailable' => 'Bağlı kayıtta devralınacak bir e-posta adresi yok.',
     ],
     'blocker' => [
         'no_matcher' => 'Bir giriş, ilgili kişinin satırlarının nasıl bulunacağını söylemiyor (subject(), matchedBy(), matchedByEmail() veya matchedUsing()).',
@@ -267,6 +275,9 @@ return [
         'still_referenced' => ':child (:columns) içindeki :rows satır, silinecek :table satırlarına hâlâ başvuruyor ve onlarla birlikte silinmiyor.',
         'unmapped_reference' => ':child tablosu :table (:columns) tablosuna başvuruyor ama veri haritasında yok. Ekleyin veya GdprRequests::acknowledge() ile onaylayın.',
         'retain_date_missing' => 'Saklanan bir satırın :table.:column içinde tarihi yok, saklama süresi hesaplanamaz.',
+        'subject_row_missing' => 'Bağlı kayıt :model #:id bulunamadı, bu nedenle ona hiçbir şey eşleştirilemez.',
+        'subject_email_mismatch' => 'Talepteki e-posta, bağlı kaydın e-postasından farklı. Talebin kimi ilgilendirdiğine karar verin: doğru kaydı bağlayın veya kaydın adresini kabul edin.',
+        'subject_email_unknown' => ':entry satırları e-postayla buluyor, ancak bağlı kayıt eşleştirilecek bir adres sunmuyor. Veri haritasında subject(email: ...) tanımlayın ve kayıtta doldurun.',
     ],
     'requester_mail' => [
         'received' => [

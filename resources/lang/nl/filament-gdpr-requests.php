@@ -128,6 +128,8 @@ return [
         'refuse_help' => 'Leg vast waarom het verzoek wordt geweigerd. Informeer de persoon hierover en over het recht om een klacht in te dienen.',
         'close' => 'Verzoek sluiten',
         'close_help' => 'Ontkoppelt het verzoek van het record van de persoon en verwijdert exportarchieven. Naam en adres worden na de bewaartermijn gewist.',
+        'accept_record_email' => 'E-mailadres van het record overnemen',
+        'accept_record_email_help' => 'Het verzoek gebruikt het adres van het gekoppelde record. Exportarchieven worden verwijderd en de identiteit moet opnieuw worden gecontroleerd.',
     ],
     'plan' => [
         'title' => 'Wissing van verzoek #:reference',
@@ -191,6 +193,7 @@ return [
         'export_failed' => 'Export mislukt',
         'export_link_issued' => 'Downloadlink uitgegeven',
         'export_downloaded' => 'Export gedownload',
+        'record_email_accepted' => 'E-mailadres van record overgenomen',
     ],
     'notifications' => [
         'failed' => 'De actie is mislukt',
@@ -206,6 +209,7 @@ return [
         'closed' => 'Verzoek gesloten',
         'confirmed' => 'Wissing bevestigd. Nu kan een tweede persoon haar uitvoeren.',
         'started' => 'Wissing gestart',
+        'record_email_accepted' => 'Het e-mailadres van het record staat nu op het verzoek. Controleer de identiteit opnieuw.',
     ],
     'errors' => [
         'not_permitted' => 'U mag dit niet doen (:ability).',
@@ -242,6 +246,10 @@ return [
         'subject_not_found' => 'Geen zo\'n record.',
         'subject_not_mapped' => 'Dit recordtype is niet gedeclareerd in de gegevenskaart.',
         'wrong_type' => 'Dit verzoektype staat de actie niet toe.',
+        'erasure_started_locked' => 'De verwijdering heeft al gegevens van het gekoppelde record gewijzigd. Ze kan alleen worden hervat.',
+        'export_blocked' => 'De export kan niet worden gemaakt: :reason',
+        'export_not_removed' => ':count exportarchief/-archieven konden niet worden verwijderd, dus er is niets gewijzigd. Probeer het opnieuw.',
+        'record_email_unavailable' => 'Het gekoppelde record heeft geen e-mailadres om over te nemen.',
     ],
     'blocker' => [
         'no_matcher' => 'Een item zegt niet hoe de rijen van de betrokkene te vinden zijn (subject(), matchedBy(), matchedByEmail() of matchedUsing()).',
@@ -267,6 +275,9 @@ return [
         'still_referenced' => ':rows rij(en) van :child (:columns) verwijzen nog naar rijen van :table die zouden worden verwijderd en er niet mee worden verwijderd.',
         'unmapped_reference' => 'Tabel :child verwijst naar :table (:columns) maar staat niet in de gegevenskaart. Voeg haar toe of erken haar met GdprRequests::acknowledge().',
         'retain_date_missing' => 'Een bewaarde rij heeft geen datum in :table.:column, dus de bewaartermijn kan niet worden berekend.',
+        'subject_row_missing' => 'Het gekoppelde record :model #:id is niet gevonden, dus er kan niets aan worden gekoppeld.',
+        'subject_email_mismatch' => 'Het e-mailadres op het verzoek wijkt af van dat van het gekoppelde record. Bepaal over wie het verzoek gaat: koppel het juiste record of neem het adres van het record over.',
+        'subject_email_unknown' => ':entry vindt rijen op e-mail, maar het gekoppelde record biedt geen adres. Declareer subject(email: ...) in de gegevenskaart en vul het in op het record.',
     ],
     'requester_mail' => [
         'received' => [

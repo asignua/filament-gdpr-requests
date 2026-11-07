@@ -128,6 +128,8 @@ return [
         'refuse_help' => 'Registre por qué se rechaza. Informe a la persona y de su derecho a reclamar.',
         'close' => 'Cerrar solicitud',
         'close_help' => 'Desvincula la solicitud del registro de la persona y elimina los archivos de exportación. El nombre y la dirección se borran tras el plazo de conservación.',
+        'accept_record_email' => 'Aceptar el correo del registro',
+        'accept_record_email_help' => 'La solicitud usará la dirección del registro vinculado. Se eliminarán los archivos de exportación y habrá que verificar de nuevo la identidad.',
     ],
     'plan' => [
         'title' => 'Supresión de la solicitud #:reference',
@@ -191,6 +193,7 @@ return [
         'export_failed' => 'Exportación fallida',
         'export_link_issued' => 'Enlace de descarga emitido',
         'export_downloaded' => 'Exportación descargada',
+        'record_email_accepted' => 'Correo del registro aceptado',
     ],
     'notifications' => [
         'failed' => 'La acción falló',
@@ -206,6 +209,7 @@ return [
         'closed' => 'Solicitud cerrada',
         'confirmed' => 'Supresión confirmada. Ahora puede ejecutarla una segunda persona.',
         'started' => 'Supresión iniciada',
+        'record_email_accepted' => 'El correo del registro ya está en la solicitud. Verifique la identidad de nuevo.',
     ],
     'errors' => [
         'not_permitted' => 'No tiene permiso para hacer esto (:ability).',
@@ -242,6 +246,10 @@ return [
         'subject_not_found' => 'No existe ese registro.',
         'subject_not_mapped' => 'Este tipo de registro no está declarado en el mapa de datos.',
         'wrong_type' => 'Este tipo de solicitud no permite la acción.',
+        'erasure_started_locked' => 'El borrado ya ha cambiado datos del registro vinculado. Solo se puede reanudar.',
+        'export_blocked' => 'No se puede generar la exportación: :reason',
+        'export_not_removed' => 'No se pudieron eliminar :count archivo(s) de exportación, así que no se cambió nada. Inténtelo de nuevo.',
+        'record_email_unavailable' => 'El registro vinculado no tiene una dirección de correo que adoptar.',
     ],
     'blocker' => [
         'no_matcher' => 'Una entrada no dice cómo encontrar las filas del interesado (subject(), matchedBy(), matchedByEmail() o matchedUsing()).',
@@ -267,6 +275,9 @@ return [
         'still_referenced' => ':rows fila(s) de :child (:columns) aún referencian filas de :table que se eliminarían y no se eliminan con ellas.',
         'unmapped_reference' => 'La tabla :child referencia a :table (:columns) pero no está en el mapa de datos. Añádala o reconózcala con GdprRequests::acknowledge().',
         'retain_date_missing' => 'Una fila conservada no tiene fecha en :table.:column, así que no se puede calcular su plazo de conservación.',
+        'subject_row_missing' => 'No se encuentra el registro vinculado :model #:id, por lo que no se le puede asociar nada.',
+        'subject_email_mismatch' => 'El correo de la solicitud difiere del correo del registro vinculado. Decida a quién se refiere la solicitud: vincule el registro correcto o acepte la dirección del registro.',
+        'subject_email_unknown' => ':entry busca filas por correo, pero el registro vinculado no ofrece ninguna dirección. Declare subject(email: ...) en el mapa de datos y complétela en el registro.',
     ],
     'requester_mail' => [
         'received' => [

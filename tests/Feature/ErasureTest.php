@@ -310,7 +310,7 @@ class ErasureTest extends TestCase
         $this->confirm($request);
 
         // Somebody re-points the request behind the confirmation's back (the service would refuse; the database does not).
-        $request->forceFill(['subject_id' => (string) $bruno->id])->save();
+        $request->forceFill(['subject_id' => (string) $bruno->id, 'subject_email' => $bruno->email])->save();
 
         try {
             $this->execute($request);

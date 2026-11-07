@@ -12,7 +12,7 @@ use Asignua\FilamentGdprRequests\DataMap\PersonalDataRegistry;
 use Asignua\FilamentGdprRequests\DataMap\Retain;
 use Asignua\FilamentGdprRequests\DataMap\Rule;
 use Asignua\FilamentGdprRequests\DataMap\Selection;
-use Asignua\FilamentGdprRequests\DataMap\Subject;
+use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Support\Environment;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
@@ -29,7 +29,10 @@ use Throwable;
  */
 final class Planner
 {
-    public function __construct(private readonly PersonalDataRegistry $registry) {}
+    public function __construct(
+        private readonly PersonalDataRegistry $registry,
+        private readonly SubjectResolver $subjects,
+    ) {}
 
     /**
      * @param string|null $only restrict the (costly) row scan to one group; blockers and order stay complete
@@ -45,15 +48,16 @@ final class Planner
         }
 
         $model = $request->subject_model;
-        $root = $model === null ? null : $this->registry->rootFor($model);
+        $resolved = $this->subjects->resolve($request);
 
-        if ($request->subject_id === null || $root === null) {
+        if ($model === null || $resolved === null) {
             $global[] = new Blocker('subject_not_mapped');
 
             return new ErasurePlan([], $global);
         }
 
-        $subject = new Subject($root, $request->subject_id, $request->subject_email);
+        $subject = $resolved->subject;
+        $global = [...$global, ...$resolved->blockers];
         $entries = $this->registry->forSubject($model);
         $schema = new Schema;
 
@@ -76,7 +80,7 @@ final class Planner
 
         $groups = $this->order($groups, $schema);
 
-        return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema)], $model.'#'.$request->subject_id);
+        return new ErasurePlan($groups, [...$global, ...$this->unmappedReferences($groups, $schema)], $model.'#'.$request->subject_id, $subject->email);
     }
 
     /**

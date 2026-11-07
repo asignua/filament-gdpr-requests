@@ -128,6 +128,8 @@ return [
         'refuse_help' => 'Record why the request is refused. Tell the person about it and about their right to complain.',
         'close' => 'Close request',
         'close_help' => 'Detaches the request from the person\'s record and removes export archives. Name and address are wiped after the retention period.',
+        'accept_record_email' => 'Accept the record\'s e-mail',
+        'accept_record_email_help' => 'The request will use the address of the linked record. Export archives are removed, and the identity must be verified again.',
     ],
     'plan' => [
         'title' => 'Erasure of request #:reference',
@@ -191,6 +193,7 @@ return [
         'export_failed' => 'Export failed',
         'export_link_issued' => 'Download link issued',
         'export_downloaded' => 'Export downloaded',
+        'record_email_accepted' => 'Record\'s e-mail accepted',
     ],
     'notifications' => [
         'failed' => 'The action failed',
@@ -206,6 +209,7 @@ return [
         'closed' => 'Request closed',
         'confirmed' => 'Erasure confirmed. A second person can now run it.',
         'started' => 'Erasure started',
+        'record_email_accepted' => 'The record\'s e-mail is now on the request. Verify the identity again.',
     ],
     'errors' => [
         'not_permitted' => 'You are not allowed to do this (:ability).',
@@ -242,6 +246,10 @@ return [
         'subject_not_found' => 'No such record.',
         'subject_not_mapped' => 'This record type is not declared in the data map.',
         'wrong_type' => 'This request type does not allow the action.',
+        'erasure_started_locked' => 'The erasure has already changed data of the linked record. It can only be resumed.',
+        'export_blocked' => 'The export cannot be built: :reason',
+        'export_not_removed' => ':count export archive(s) could not be removed, so nothing was changed. Try again.',
+        'record_email_unavailable' => 'The linked record has no e-mail address to take over.',
     ],
     'blocker' => [
         'no_matcher' => 'An entry does not say how to find the subject\'s rows (subject(), matchedBy(), matchedByEmail() or matchedUsing()).',
@@ -267,6 +275,9 @@ return [
         'still_referenced' => ':rows row(s) of :child (:columns) still reference rows of :table that would be deleted, and are not deleted with them.',
         'unmapped_reference' => 'Table :child references :table (:columns) but is not in the data map. Add it, or acknowledge it with GdprRequests::acknowledge().',
         'retain_date_missing' => 'A retained row has no date in :table.:column, so its retention period cannot be computed.',
+        'subject_row_missing' => 'The linked record :model #:id cannot be found, so nothing can be matched to it.',
+        'subject_email_mismatch' => 'The e-mail on the request differs from the e-mail of the linked record. Decide who the request is about: link the right record, or accept the record\'s address.',
+        'subject_email_unknown' => ':entry finds rows by e-mail, but the linked record offers no address to match on. Declare subject(email: ...) in the data map and fill it in on the record.',
     ],
     'requester_mail' => [
         'received' => ['subject' => 'We received your request (:reference)', 'line' => 'We received your data request. Your reference is :reference. We will answer by :date.'],

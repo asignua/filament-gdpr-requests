@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\Services;
 
+use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Erasure\Failures;
 use Asignua\FilamentGdprRequests\Exceptions\GdprException;
 use Asignua\FilamentGdprRequests\Exceptions\InvalidTransition;
@@ -26,13 +27,14 @@ use Throwable;
  */
 final class ExportService
 {
-    public function __construct(private readonly ExportBuilder $builder) {}
+    public function __construct(private readonly ExportBuilder $builder, private readonly SubjectResolver $subjects) {}
 
     public function request(GdprRequest $request, Authenticatable $actor): GdprRequestExport
     {
         Gates::authorize(Gates::EXPORT, $actor);
         Environment::assertSupported();
         $this->assertEligible($request);
+        $this->assertSubjectClear($request);
         PrivateDisk::resolve();
 
         $export = GdprRequestExport::query()->create([
@@ -85,14 +87,23 @@ final class ExportService
             $disk->put($path, $stream);
             fclose($stream);
 
-            $export->forceFill([
+            // Only a job still pending may publish its archive: a relink or a purge during the build has marked this
+            // export removed, and the data just written belongs to a person this request is no longer about.
+            $published = GdprRequestExport::query()->whereKey($export->getKey())->where('status', GdprRequestExport::PENDING)->update([
                 'status' => GdprRequestExport::READY,
                 'disk' => PrivateDisk::name(),
                 'path' => $path,
                 'size' => (int) filesize($zip),
                 'expires_at' => now()->addDays(max(1, (int) config('filament-gdpr-requests.export.retention_days', 30))),
-            ])->save();
+            ]);
 
+            if ($published !== 1) {
+                $disk->delete($path);
+
+                return;
+            }
+
+            $export->refresh();
             RequestLog::record($request, 'export_ready', null, ['export' => $export->ulid, 'bytes' => $export->size]);
         } catch (Throwable $e) {
             $export->forceFill(['status' => GdprRequestExport::FAILED, 'error' => Failures::describe($e)])->save();
@@ -138,25 +149,47 @@ final class ExportService
         RequestLog::record($export->owner(), 'export_downloaded', $actor, ['export' => $export->ulid]);
     }
 
-    public function removeAllFor(GdprRequest $request): void
+    /**
+     * @return int how many archives could not be removed
+     */
+    public function removeAllFor(GdprRequest $request): int
     {
+        $failed = 0;
+
         foreach ($request->exports()->whereNull('removed_at')->get() as $export) {
-            $this->remove($export);
+            if (!$this->remove($export)) {
+                $failed++;
+            }
         }
+
+        return $failed;
     }
 
-    public function remove(GdprRequestExport $export): void
+    /**
+     * @return bool false when the archive is still there; the row then stays as it is, and a later prune retries
+     */
+    public function remove(GdprRequestExport $export): bool
     {
         if ($export->disk !== null && $export->path !== null) {
             try {
                 Storage::disk($export->disk)->delete($export->path);
             } catch (Throwable) {
-                // The row is marked removed only if the delete did not throw; otherwise a later prune retries.
-                return;
+                return false;
             }
         }
 
         $export->forceFill(['status' => GdprRequestExport::REMOVED, 'removed_at' => now(), 'path' => null])->save();
+
+        return true;
+    }
+
+    private function assertSubjectClear(GdprRequest $request): void
+    {
+        $blockers = $this->subjects->resolve($request)->blockers ?? [];
+
+        if ($blockers !== []) {
+            throw GdprException::translated('export_blocked', ['reason' => $blockers[0]->message()]);
+        }
     }
 
     private function assertEligible(GdprRequest $request): void

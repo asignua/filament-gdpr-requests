@@ -128,6 +128,8 @@ return [
         'refuse_help' => 'Halten Sie den Ablehnungsgrund fest. Informieren Sie die Person darüber und über ihr Beschwerderecht.',
         'close' => 'Anfrage schließen',
         'close_help' => 'Löst die Anfrage vom Datensatz der Person und entfernt Export-Archive. Name und Adresse werden nach der Aufbewahrungsfrist gelöscht.',
+        'accept_record_email' => 'E-Mail des Datensatzes übernehmen',
+        'accept_record_email_help' => 'Die Anfrage verwendet künftig die Adresse des verknüpften Datensatzes. Exportarchive werden entfernt, und die Identität muss erneut geprüft werden.',
     ],
     'plan' => [
         'title' => 'Löschung zu Anfrage #:reference',
@@ -191,6 +193,7 @@ return [
         'export_failed' => 'Export fehlgeschlagen',
         'export_link_issued' => 'Download-Link ausgestellt',
         'export_downloaded' => 'Export heruntergeladen',
+        'record_email_accepted' => 'E-Mail des Datensatzes übernommen',
     ],
     'notifications' => [
         'failed' => 'Die Aktion ist fehlgeschlagen',
@@ -206,6 +209,7 @@ return [
         'closed' => 'Anfrage geschlossen',
         'confirmed' => 'Löschung bestätigt. Eine zweite Person kann sie jetzt ausführen.',
         'started' => 'Löschung gestartet',
+        'record_email_accepted' => 'Die E-Mail des Datensatzes steht nun in der Anfrage. Prüfen Sie die Identität erneut.',
     ],
     'errors' => [
         'not_permitted' => 'Sie dürfen das nicht tun (:ability).',
@@ -242,6 +246,10 @@ return [
         'subject_not_found' => 'Kein solcher Datensatz.',
         'subject_not_mapped' => 'Dieser Datensatztyp ist in der Datenkarte nicht deklariert.',
         'wrong_type' => 'Diese Anfrageart erlaubt die Aktion nicht.',
+        'erasure_started_locked' => 'Die Löschung hat bereits Daten des verknüpften Datensatzes geändert. Sie kann nur fortgesetzt werden.',
+        'export_blocked' => 'Der Export kann nicht erstellt werden: :reason',
+        'export_not_removed' => ':count Exportarchiv(e) konnten nicht entfernt werden, daher wurde nichts geändert. Versuchen Sie es erneut.',
+        'record_email_unavailable' => 'Der verknüpfte Datensatz hat keine E-Mail-Adresse, die übernommen werden kann.',
     ],
     'blocker' => [
         'no_matcher' => 'Ein Eintrag sagt nicht, wie die Zeilen der Person zu finden sind (subject(), matchedBy(), matchedByEmail() oder matchedUsing()).',
@@ -267,6 +275,9 @@ return [
         'still_referenced' => ':rows Zeile(n) von :child (:columns) verweisen noch auf Zeilen von :table, die gelöscht würden, und werden nicht mitgelöscht.',
         'unmapped_reference' => 'Tabelle :child verweist auf :table (:columns), steht aber nicht in der Datenkarte. Fügen Sie sie hinzu oder bestätigen Sie sie mit GdprRequests::acknowledge().',
         'retain_date_missing' => 'Eine aufbewahrte Zeile hat kein Datum in :table.:column, die Aufbewahrungsfrist lässt sich daher nicht berechnen.',
+        'subject_row_missing' => 'Der verknüpfte Datensatz :model #:id wurde nicht gefunden, daher kann ihm nichts zugeordnet werden.',
+        'subject_email_mismatch' => 'Die E-Mail-Adresse der Anfrage weicht von der des verknüpften Datensatzes ab. Entscheiden Sie, wen die Anfrage betrifft: Verknüpfen Sie den richtigen Datensatz oder übernehmen Sie die Adresse des Datensatzes.',
+        'subject_email_unknown' => ':entry findet Zeilen per E-Mail, aber der verknüpfte Datensatz bietet keine Adresse dafür. Deklarieren Sie subject(email: ...) in der Datenkarte und tragen Sie sie im Datensatz ein.',
     ],
     'requester_mail' => [
         'received' => [

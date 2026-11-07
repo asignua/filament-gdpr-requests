@@ -6,7 +6,7 @@ namespace Asignua\FilamentGdprRequests\Export;
 
 use Asignua\FilamentGdprRequests\DataMap\PersonalDataRegistry;
 use Asignua\FilamentGdprRequests\DataMap\Selection;
-use Asignua\FilamentGdprRequests\DataMap\Subject;
+use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Exceptions\GdprException;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Support\Schema;
@@ -25,7 +25,10 @@ final class ExportBuilder
 {
     private const int JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
 
-    public function __construct(private readonly PersonalDataRegistry $registry) {}
+    public function __construct(
+        private readonly PersonalDataRegistry $registry,
+        private readonly SubjectResolver $subjects,
+    ) {}
 
     /**
      * @return string path of a temporary zip file; the caller moves it and deletes it
@@ -33,13 +36,18 @@ final class ExportBuilder
     public function build(GdprRequest $request): string
     {
         $model = $request->subject_model;
-        $root = $model === null ? null : $this->registry->rootFor($model);
+        $resolved = $this->subjects->resolve($request);
 
-        if ($root === null || $request->subject_id === null) {
+        if ($model === null || $resolved === null) {
             throw GdprException::translated('subject_not_mapped');
         }
 
-        $subject = new Subject($root, $request->subject_id, $request->subject_email);
+        // Rows are found through the linked record; a doubt about who that is stops the export, it is not guessed at.
+        if ($resolved->blockers !== []) {
+            throw GdprException::translated('export_blocked', ['reason' => $resolved->blockers[0]->message()]);
+        }
+
+        $subject = $resolved->subject;
         $schema = new Schema;
         $work = sys_get_temp_dir().'/gdpr-export-'.Str::random(16);
         File::ensureDirectoryExists($work.'/data');

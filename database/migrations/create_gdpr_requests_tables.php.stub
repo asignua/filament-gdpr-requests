@@ -84,6 +84,8 @@ return new class extends Migration
             $table->unsignedInteger('trashed')->default(0);
             $table->unsignedSmallInteger('attempts')->default(0);
             $table->text('detail')->nullable();
+            // The plan this step was done under: a step counts only for the same person and the same rules.
+            $table->string('fingerprint', 64)->nullable();
             $table->text('error')->nullable();
             $table->dateTime('finished_at')->nullable();
             $table->timestamps();

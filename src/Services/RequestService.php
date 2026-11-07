@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Asignua\FilamentGdprRequests\Services;
 
 use Asignua\FilamentGdprRequests\DataMap\PersonalDataRegistry;
+use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Enums\RequestChannel;
 use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Enums\RequestType;
@@ -18,6 +19,7 @@ use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Asignua\FilamentGdprRequests\Support\Sql;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,7 +27,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class RequestService
 {
-    public function __construct(private readonly PersonalDataRegistry $registry) {}
+    public function __construct(
+        private readonly PersonalDataRegistry $registry,
+        private readonly SubjectResolver $subjects,
+    ) {}
 
     /**
      * Records a new request. $verified is never accepted from outside: a request always starts unverified.
@@ -58,7 +63,8 @@ final class RequestService
             $request->save();
 
             if (isset($data['subject_model'], $data['subject_id'])) {
-                $this->bindSubject($request, $data['subject_model'], (string) $data['subject_id']);
+                $model = $data['subject_model'];
+                $this->bindSubject($request, $model, $this->canonicalKey($model, (string) $data['subject_id']));
             } elseif ($request->subject_email !== null && Pseudonym::isConfigured()) {
                 $request->forceFill($this->emailPseudonymFields($request->subject_email))->save();
             }
@@ -73,32 +79,55 @@ final class RequestService
 
     /**
      * Ties the request to a person by an explicit key. Verification is cleared: the identity was checked against
-     * the previous link, not this one.
+     * the previous link, not this one. The archives go first: whatever was exported belongs to the previous person.
      */
     public function linkSubject(GdprRequest $request, string $model, string|int $id, Authenticatable $actor): GdprRequest
     {
         Gates::authorize(Gates::MANAGE, $actor);
-        $this->assertOpen($request);
+        $this->assertRelinkable($this->current($request));
 
-        if ($request->status === RequestStatus::ErasureConfirmed) {
-            throw InvalidTransition::translated('confirmed_locked');
-        }
+        $key = $this->canonicalKey($model, (string) $id);
+        $this->removeArchives($request);
 
-        DB::transaction(function () use ($request, $model, $id, $actor): void {
-            $this->bindSubject($request, $model, (string) $id);
-            $request->forceFill([
-                'identity_verified_at' => null,
-                'identity_verified_by' => null,
-                'identity_note' => null,
-                'erasure_confirmed_at' => null,
-                'erasure_confirmed_by' => null,
-                'erasure_plan' => null,
-                'status' => $request->status === RequestStatus::New ? RequestStatus::New : RequestStatus::InProgress,
-            ])->save();
-            RequestLog::record($request, 'subject_linked', $actor, ['model' => $model]);
+        DB::transaction(function () use ($request, $model, $key, $actor): void {
+            $locked = $this->locked($request);
+            $this->assertRelinkable($locked);
+            $this->bindSubject($locked, $model, $key);
+            $this->resetChecks($locked);
+            RequestLog::record($locked, 'subject_linked', $actor, ['model' => $model]);
         });
 
-        return $request;
+        return $request->refresh();
+    }
+
+    /**
+     * Settles a difference between the address on the request and the linked record in favour of the record. It is
+     * a decision about who the request is about, so the identity must be checked again.
+     */
+    public function acceptRecordEmail(GdprRequest $request, Authenticatable $actor): GdprRequest
+    {
+        Gates::authorize(Gates::MANAGE, $actor);
+
+        $current = $this->current($request);
+        $this->assertRewritable($current);
+
+        $email = $this->subjects->resolve($current)?->subject->email;
+
+        if ($email === null) {
+            throw GdprException::translated('record_email_unavailable');
+        }
+
+        $this->removeArchives($request);
+
+        DB::transaction(function () use ($request, $email, $actor): void {
+            $locked = $this->locked($request);
+            $this->assertRewritable($locked);
+            $locked->forceFill(['subject_email' => $email] + $this->emailPseudonymFields($email));
+            $this->resetChecks($locked);
+            RequestLog::record($locked, 'record_email_accepted', $actor);
+        });
+
+        return $request->refresh();
     }
 
     /**
@@ -287,7 +316,11 @@ final class RequestService
         return $request;
     }
 
-    private function bindSubject(GdprRequest $request, string $model, string $id): void
+    /**
+     * The key as the database stores it. A number typed as `001`, or a string the collation folds, finds the row but
+     * would match nothing later, where keys are compared exactly; and `1abc` must not find row 1 on a lenient server.
+     */
+    private function canonicalKey(string $model, string $id): string
     {
         $root = $this->registry->rootFor($model);
 
@@ -295,12 +328,27 @@ final class RequestService
             throw GdprException::translated('subject_not_mapped');
         }
 
-        $exists = $root->model::query()->withoutGlobalScopes()->whereKey($id)->exists();
+        $prototype = new ($root->model);
 
-        if (!$exists) {
+        if ($prototype->getKeyType() === 'int' && !ctype_digit($id)) {
             throw GdprException::translated('subject_not_found');
         }
 
+        try {
+            $key = $root->model::query()->withoutGlobalScopes()->whereKey($id)->value($prototype->getKeyName());
+        } catch (QueryException) {
+            $key = null; // the value does not even fit the column
+        }
+
+        if (!is_scalar($key)) {
+            throw GdprException::translated('subject_not_found');
+        }
+
+        return (string) $key;
+    }
+
+    private function bindSubject(GdprRequest $request, string $model, string $id): void
+    {
         $version = Pseudonym::currentVersion();
 
         $request->forceFill([
@@ -317,6 +365,64 @@ final class RequestService
     private function emailPseudonymFields(string $email): array
     {
         return ['email_pseudonym' => Pseudonym::forEmail($email), 'pseudonym_key_version' => Pseudonym::currentVersion()];
+    }
+
+    private function current(GdprRequest $request): GdprRequest
+    {
+        return GdprRequest::query()->whereKey($request->getKey())->firstOrFail();
+    }
+
+    private function locked(GdprRequest $request): GdprRequest
+    {
+        return GdprRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
+    }
+
+    /**
+     * Who the request is about may change only while nothing was done to that person. A partial erasure can only go
+     * forward: the rows it changed belong to the person it was confirmed for.
+     */
+    private function assertRelinkable(GdprRequest $request): void
+    {
+        $this->assertOpen($request);
+
+        if ($request->status === RequestStatus::ErasureConfirmed) {
+            throw InvalidTransition::translated('confirmed_locked');
+        }
+
+        if ($request->status === RequestStatus::Partial || $request->steps()->exists()) {
+            throw InvalidTransition::translated('erasure_started_locked');
+        }
+    }
+
+    private function assertRewritable(GdprRequest $request): void
+    {
+        $this->assertOpen($request);
+
+        if ($request->status === RequestStatus::Partial || $request->steps()->exists()) {
+            throw InvalidTransition::translated('erasure_started_locked');
+        }
+    }
+
+    private function resetChecks(GdprRequest $request): void
+    {
+        $request->forceFill([
+            'identity_verified_at' => null,
+            'identity_verified_by' => null,
+            'identity_note' => null,
+            'erasure_confirmed_at' => null,
+            'erasure_confirmed_by' => null,
+            'erasure_plan' => null,
+            'status' => $request->status === RequestStatus::New ? RequestStatus::New : RequestStatus::InProgress,
+        ])->save();
+    }
+
+    private function removeArchives(GdprRequest $request): void
+    {
+        $failed = app(ExportService::class)->removeAllFor($request);
+
+        if ($failed > 0) {
+            throw GdprException::translated('export_not_removed', ['count' => $failed]);
+        }
     }
 
     private function assertOpen(GdprRequest $request): void

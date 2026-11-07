@@ -10,13 +10,15 @@ namespace Asignua\FilamentGdprRequests\Erasure;
 final class ErasurePlan
 {
     /**
-     * @param list<GroupPlan> $groups   in execution order (rows that reference others first)
-     * @param list<Blocker>   $blockers global ones
+     * @param list<GroupPlan> $groups       in execution order (rows that reference others first)
+     * @param list<Blocker>   $blockers     global ones
+     * @param string|null     $subjectEmail the address rows are matched on: the linked record's
      */
     public function __construct(
         public readonly array $groups,
         public readonly array $blockers = [],
         public readonly string $subjectKey = '',
+        public readonly ?string $subjectEmail = null,
     ) {}
 
     /**

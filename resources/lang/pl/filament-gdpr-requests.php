@@ -128,6 +128,8 @@ return [
         'refuse_help' => 'Zapisz powód odmowy. Poinformuj osobę o odmowie i o prawie do wniesienia skargi.',
         'close' => 'Zamknij wniosek',
         'close_help' => 'Odłącza wniosek od rekordu osoby i usuwa archiwa eksportu. Imię i adres są kasowane po okresie przechowywania.',
+        'accept_record_email' => 'Przyjmij adres z rekordu',
+        'accept_record_email_help' => 'Wniosek użyje adresu powiązanego rekordu. Archiwa eksportu zostaną usunięte, a tożsamość trzeba będzie zweryfikować ponownie.',
     ],
     'plan' => [
         'title' => 'Usunięcie dla wniosku #:reference',
@@ -191,6 +193,7 @@ return [
         'export_failed' => 'Eksport nie powiódł się',
         'export_link_issued' => 'Wydano link do pobrania',
         'export_downloaded' => 'Eksport pobrany',
+        'record_email_accepted' => 'Przyjęto adres z rekordu',
     ],
     'notifications' => [
         'failed' => 'Działanie nie powiodło się',
@@ -206,6 +209,7 @@ return [
         'closed' => 'Wniosek zamknięty',
         'confirmed' => 'Usunięcie potwierdzone. Teraz może je uruchomić druga osoba.',
         'started' => 'Usuwanie rozpoczęte',
+        'record_email_accepted' => 'Adres z rekordu jest już we wniosku. Zweryfikuj tożsamość ponownie.',
     ],
     'errors' => [
         'not_permitted' => 'Nie masz uprawnień do tej czynności (:ability).',
@@ -242,6 +246,10 @@ return [
         'subject_not_found' => 'Nie ma takiego rekordu.',
         'subject_not_mapped' => 'Ten typ rekordu nie jest zadeklarowany w mapie danych.',
         'wrong_type' => 'Ten typ wniosku nie dopuszcza tego działania.',
+        'erasure_started_locked' => 'Usuwanie zmieniło już dane powiązanego rekordu. Można je tylko wznowić.',
+        'export_blocked' => 'Nie można utworzyć eksportu: :reason',
+        'export_not_removed' => 'Nie udało się usunąć archiwów eksportu (:count), więc niczego nie zmieniono. Spróbuj ponownie.',
+        'record_email_unavailable' => 'Powiązany rekord nie ma adresu e-mail do przejęcia.',
     ],
     'blocker' => [
         'no_matcher' => 'Wpis mapy nie mówi, jak znaleźć wiersze osoby (subject(), matchedBy(), matchedByEmail() lub matchedUsing()).',
@@ -267,6 +275,9 @@ return [
         'still_referenced' => 'Wierszy w :child (:columns) wskazujących na usuwane wiersze :table, które same nie są usuwane: :rows.',
         'unmapped_reference' => 'Tabela :child wskazuje na :table (:columns), ale nie ma jej w mapie danych. Dodaj ją albo potwierdź przez GdprRequests::acknowledge().',
         'retain_date_missing' => 'Zachowany wiersz nie ma daty w :table.:column, więc nie da się obliczyć okresu przechowywania.',
+        'subject_row_missing' => 'Nie znaleziono powiązanego rekordu :model #:id, więc nie można do niego niczego dopasować.',
+        'subject_email_mismatch' => 'Adres e-mail we wniosku różni się od adresu powiązanego rekordu. Zdecyduj, kogo dotyczy wniosek: powiąż właściwy rekord albo przyjmij adres z rekordu.',
+        'subject_email_unknown' => ':entry wyszukuje wiersze po adresie e-mail, ale powiązany rekord nie podaje adresu. Zadeklaruj subject(email: ...) w mapie danych i uzupełnij go w rekordzie.',
     ],
     'requester_mail' => [
         'received' => [

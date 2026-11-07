@@ -128,6 +128,8 @@ return [
         'refuse_help' => 'Registrate il motivo del rifiuto. Informate la persona e del suo diritto di reclamo.',
         'close' => 'Chiudi la richiesta',
         'close_help' => 'Scollega la richiesta dal record della persona e rimuove gli archivi di esportazione. Nome e indirizzo sono cancellati dopo il periodo di conservazione.',
+        'accept_record_email' => 'Accetta l\'e-mail del record',
+        'accept_record_email_help' => 'La richiesta userà l\'indirizzo del record collegato. Gli archivi di esportazione vengono rimossi e l\'identità va verificata di nuovo.',
     ],
     'plan' => [
         'title' => 'Cancellazione della richiesta #:reference',
@@ -191,6 +193,7 @@ return [
         'export_failed' => 'Esportazione non riuscita',
         'export_link_issued' => 'Link di download emesso',
         'export_downloaded' => 'Esportazione scaricata',
+        'record_email_accepted' => 'E-mail del record accettata',
     ],
     'notifications' => [
         'failed' => 'L\'azione non è riuscita',
@@ -206,6 +209,7 @@ return [
         'closed' => 'Richiesta chiusa',
         'confirmed' => 'Cancellazione confermata. Ora una seconda persona può avviarla.',
         'started' => 'Cancellazione avviata',
+        'record_email_accepted' => 'L\'e-mail del record è ora nella richiesta. Verifica di nuovo l\'identità.',
     ],
     'errors' => [
         'not_permitted' => 'Non siete autorizzati a farlo (:ability).',
@@ -242,6 +246,10 @@ return [
         'subject_not_found' => 'Nessun record di questo tipo.',
         'subject_not_mapped' => 'Questo tipo di record non è dichiarato nella mappa dei dati.',
         'wrong_type' => 'Questo tipo di richiesta non consente l\'azione.',
+        'erasure_started_locked' => 'La cancellazione ha già modificato i dati del record collegato. Può solo essere ripresa.',
+        'export_blocked' => 'Impossibile creare l\'esportazione: :reason',
+        'export_not_removed' => 'Impossibile rimuovere :count archivio/i di esportazione, quindi non è stato modificato nulla. Riprova.',
+        'record_email_unavailable' => 'Il record collegato non ha un indirizzo e-mail da adottare.',
     ],
     'blocker' => [
         'no_matcher' => 'Una voce non dice come trovare le righe dell\'interessato (subject(), matchedBy(), matchedByEmail() o matchedUsing()).',
@@ -267,6 +275,9 @@ return [
         'still_referenced' => ':rows riga/righe di :child (:columns) puntano ancora a righe di :table che verrebbero eliminate e non vengono eliminate con esse.',
         'unmapped_reference' => 'La tabella :child fa riferimento a :table (:columns) ma non è nella mappa dei dati. Aggiungetela o riconoscetela con GdprRequests::acknowledge().',
         'retain_date_missing' => 'Una riga conservata non ha data in :table.:column, quindi il suo periodo di conservazione non è calcolabile.',
+        'subject_row_missing' => 'Il record collegato :model #:id non è stato trovato, quindi non gli si può associare nulla.',
+        'subject_email_mismatch' => 'L\'e-mail della richiesta è diversa da quella del record collegato. Decidi a chi si riferisce la richiesta: collega il record corretto o accetta l\'indirizzo del record.',
+        'subject_email_unknown' => ':entry trova le righe per e-mail, ma il record collegato non offre alcun indirizzo. Dichiara subject(email: ...) nella mappa dei dati e compilalo nel record.',
     ],
     'requester_mail' => [
         'received' => [

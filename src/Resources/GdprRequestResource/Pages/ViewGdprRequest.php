@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Asignua\FilamentGdprRequests\Resources\GdprRequestResource\Pages;
 
 use Asignua\FilamentGdprRequests\DataMap\PersonalDataRegistry;
+use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Resources\Concerns\HandlesServiceErrors;
@@ -36,6 +37,7 @@ class ViewGdprRequest extends ViewRecord
     {
         return [
             $this->linkSubjectAction(),
+            $this->acceptRecordEmailAction(),
             $this->verifyAction(),
             $this->exportAction(),
             $this->downloadAction(),
@@ -69,7 +71,7 @@ class ViewGdprRequest extends ViewRecord
         $roots = collect(app(PersonalDataRegistry::class)->subjectRoots())->mapWithKeys(static fn ($entry): array => [$entry->model => $entry->getLabel()])->all();
 
         return Action::make('link')->label(Lang::t('actions.link'))->icon('heroicon-o-link')->color('gray')
-            ->visible(fn (): bool => $this->mayManage() && $this->record->status->isOpen() && $this->record->status !== RequestStatus::Erasing && $this->record->status !== RequestStatus::ErasureConfirmed)
+            ->visible(fn (): bool => $this->mayManage() && in_array($this->record->status, [RequestStatus::New, RequestStatus::InProgress], true))
             ->modalDescription(Lang::t('actions.link_help'))
             ->schema([
                 Select::make('model')->label(Lang::t('form.subject_model'))->options($roots)->required()->native(false),
@@ -93,6 +95,27 @@ class ViewGdprRequest extends ViewRecord
 
                     $service->linkSubject($this->record, (string) $data['model'], $id, Actor::require());
                 }, 'notifications.linked');
+                $this->refreshRecord();
+            });
+    }
+
+    private function emailDiffers(): bool
+    {
+        if (!$this->mayManage() || !in_array($this->record->status, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::ErasureConfirmed], true)) {
+            return false;
+        }
+
+        return app(SubjectResolver::class)->resolve($this->record)?->hasBlocker('subject_email_mismatch') ?? false;
+    }
+
+    private function acceptRecordEmailAction(): Action
+    {
+        return Action::make('acceptRecordEmail')->label(Lang::t('actions.accept_record_email'))->icon('heroicon-o-envelope')->color('warning')
+            ->visible(fn (): bool => $this->emailDiffers())
+            ->requiresConfirmation()
+            ->modalDescription(Lang::t('actions.accept_record_email_help'))
+            ->action(function (): void {
+                $this->attempt(fn () => app(RequestService::class)->acceptRecordEmail($this->record, Actor::require()), 'notifications.record_email_accepted');
                 $this->refreshRecord();
             });
     }

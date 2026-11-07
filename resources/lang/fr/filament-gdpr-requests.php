@@ -128,6 +128,8 @@ return [
         'refuse_help' => 'Consignez le motif du refus. Informez la personne du refus et de son droit de réclamation.',
         'close' => 'Clôturer la demande',
         'close_help' => 'Détache la demande de l\'enregistrement de la personne et supprime les archives d\'export. Le nom et l\'adresse sont effacés après la durée de conservation.',
+        'accept_record_email' => 'Accepter l\'adresse de l\'enregistrement',
+        'accept_record_email_help' => 'La demande utilisera l\'adresse de l\'enregistrement lié. Les archives d\'export sont supprimées et l\'identité doit être vérifiée à nouveau.',
     ],
     'plan' => [
         'title' => 'Effacement de la demande #:reference',
@@ -191,6 +193,7 @@ return [
         'export_failed' => 'Échec de l\'export',
         'export_link_issued' => 'Lien de téléchargement émis',
         'export_downloaded' => 'Export téléchargé',
+        'record_email_accepted' => 'Adresse de l\'enregistrement acceptée',
     ],
     'notifications' => [
         'failed' => 'L\'action a échoué',
@@ -206,6 +209,7 @@ return [
         'closed' => 'Demande clôturée',
         'confirmed' => 'Effacement confirmé. Une seconde personne peut maintenant le lancer.',
         'started' => 'Effacement lancé',
+        'record_email_accepted' => 'L\'adresse de l\'enregistrement figure désormais sur la demande. Vérifiez à nouveau l\'identité.',
     ],
     'errors' => [
         'not_permitted' => 'Vous n\'êtes pas autorisé à faire cela (:ability).',
@@ -242,6 +246,10 @@ return [
         'subject_not_found' => 'Aucun enregistrement de ce type.',
         'subject_not_mapped' => 'Ce type d\'enregistrement n\'est pas déclaré dans la carte des données.',
         'wrong_type' => 'Ce type de demande n\'autorise pas cette action.',
+        'erasure_started_locked' => 'L\'effacement a déjà modifié des données de l\'enregistrement lié. Il ne peut qu\'être repris.',
+        'export_blocked' => 'L\'export ne peut pas être créé : :reason',
+        'export_not_removed' => ':count archive(s) d\'export n\'ont pas pu être supprimées : rien n\'a été modifié. Réessayez.',
+        'record_email_unavailable' => 'L\'enregistrement lié n\'a pas d\'adresse e-mail à reprendre.',
     ],
     'blocker' => [
         'no_matcher' => 'Une entrée ne dit pas comment retrouver les lignes de la personne (subject(), matchedBy(), matchedByEmail() ou matchedUsing()).',
@@ -267,6 +275,9 @@ return [
         'still_referenced' => ':rows ligne(s) de :child (:columns) référencent encore des lignes de :table qui seraient supprimées, sans être supprimées avec elles.',
         'unmapped_reference' => 'La table :child référence :table (:columns) mais n\'est pas dans la carte des données. Ajoutez-la ou reconnaissez-la avec GdprRequests::acknowledge().',
         'retain_date_missing' => 'Une ligne conservée n\'a pas de date dans :table.:column, sa durée de conservation ne peut donc pas être calculée.',
+        'subject_row_missing' => 'L\'enregistrement lié :model #:id est introuvable : rien ne peut lui être rattaché.',
+        'subject_email_mismatch' => 'L\'adresse de la demande diffère de celle de l\'enregistrement lié. Décidez qui est concerné : liez le bon enregistrement ou acceptez l\'adresse de l\'enregistrement.',
+        'subject_email_unknown' => ':entry trouve les lignes par e-mail, mais l\'enregistrement lié n\'offre aucune adresse. Déclarez subject(email: ...) dans la carte des données et renseignez-la sur l\'enregistrement.',
     ],
     'requester_mail' => [
         'received' => [

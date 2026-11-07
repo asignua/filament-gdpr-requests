@@ -16,6 +16,7 @@ use Asignua\FilamentGdprRequests\Jobs\FinalizeErasureJob;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Support\Environment;
 use Asignua\FilamentGdprRequests\Support\Gates;
+use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +63,9 @@ final class ErasureService
                     [...$plan->summary(), 'order' => array_map(static fn ($group): string => $group->key(), $plan->groups)],
                     JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
                 ),
+                // The address the rows are matched on outlives the record it came from: the root may be anonymized
+                // before an e-mail group runs, and on a resume it is gone. A request without one takes the record's.
+                ...$this->addressFromRecord($request, $plan),
             ]);
 
         if ($claimed !== 1) {
@@ -154,9 +158,8 @@ final class ErasureService
             RequestLog::record($fresh, 'four_eyes_disabled', $actor, ['group_count' => count($plan->groups)]);
         }
 
-        $settled = $fresh->steps()->get()->filter(
-            static fn ($step): bool => $step->status->isSettled() && !str_contains((string) $step->detail, '"files_pending":[{'),
-        )->pluck('group_key')->all();
+        $confirmed = (string) ($fresh->erasure_plan['fingerprint'] ?? '');
+        $settled = $fresh->steps()->get()->filter(static fn ($step): bool => $step->isComplete($confirmed))->pluck('group_key')->all();
 
         $jobs = [];
 
@@ -191,18 +194,11 @@ final class ErasureService
             }
 
             $planned = $request->erasure_plan['order'] ?? [];
+            $confirmed = (string) ($request->erasure_plan['fingerprint'] ?? '');
             $steps = $request->steps()->get()->keyBy('group_key');
 
-            $open = array_filter($planned, static function (string $key) use ($steps): bool {
-                $step = $steps->get($key);
-
-                if ($step === null || !$step->status->isSettled()) {
-                    return true;
-                }
-
-                // Settled rows but files still waiting to be removed is not finished.
-                return str_contains((string) $step->detail, '"files_pending":[{');
-            });
+            // Finished means finished under THIS plan, files included; a step of another person never counts.
+            $open = array_filter($planned, static fn (string $key): bool => !($steps->get($key)?->isComplete($confirmed) ?? false));
 
             if ($open !== []) {
                 $request->forceFill(['status' => RequestStatus::Partial])->save();
@@ -215,6 +211,21 @@ final class ErasureService
             RequestLog::record($request, 'erasure_finished', null, ['groups' => count($planned)]);
             RequesterMail::send($request, 'completed');
         });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function addressFromRecord(GdprRequest $request, ErasurePlan $plan): array
+    {
+        if ($request->subject_email !== null || $plan->subjectEmail === null) {
+            return [];
+        }
+
+        return [
+            'subject_email' => $plan->subjectEmail,
+            'email_pseudonym' => Pseudonym::forEmail($plan->subjectEmail),
+        ];
     }
 
     private function assertEligible(GdprRequest $request): void

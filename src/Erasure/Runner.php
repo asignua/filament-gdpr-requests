@@ -56,18 +56,18 @@ final class Runner
             throw InvalidTransition::translated('not_erasing');
         }
 
+        $confirmed = (string) ($locked->erasure_plan['fingerprint'] ?? '');
         $step = GdprRequestStep::query()->firstOrNew(['request_id' => $locked->getKey(), 'group_key' => $groupKey]);
-        $detail = $this->detail($step);
 
-        if ($step->exists && $step->status->isSettled() && ($detail['files_pending'] ?? []) === []) {
+        if ($step->exists && $step->isComplete($confirmed)) {
             return [];
         }
 
         $locked->forceFill(['erasure_heartbeat_at' => now()])->save();
 
         // Rows of this group were already changed and committed earlier; only the file cleanup is left.
-        if ($step->exists && ($detail['rows_done'] ?? false) === true) {
-            return $detail['files_pending'] ?? [];
+        if ($step->exists && $step->rowsDone($confirmed)) {
+            return $step->pendingFiles();
         }
 
         $plan = $this->planner->forRequest($locked, $groupKey);
@@ -82,7 +82,7 @@ final class Runner
         }
 
         // Same subject as at confirmation (the fingerprint holds model#id) and the same rules.
-        if (($locked->erasure_plan['fingerprint'] ?? null) !== $plan->fingerprint()) {
+        if ($confirmed !== $plan->fingerprint()) {
             throw InvalidTransition::translated('plan_changed');
         }
 
@@ -116,6 +116,7 @@ final class Runner
             'attempts' => $step->attempts + 1,
             'error' => null,
             'finished_at' => now(),
+            'fingerprint' => $confirmed,
             'detail' => $this->encode(['rows_done' => true, 'files_pending' => $result['files']] + ($note ?? [])),
         ])->save();
 
@@ -153,7 +154,7 @@ final class Runner
         }
 
         $step = GdprRequestStep::query()->where(['request_id' => $request->getKey(), 'group_key' => $groupKey])->firstOrFail();
-        $detail = $this->detail($step);
+        $detail = $step->details();
         $detail['files_pending'] = $left;
         $step->forceFill(['detail' => $this->encode($detail)]);
 
@@ -191,16 +192,6 @@ final class Runner
             ->update(['status' => RequestStatus::Partial->value]);
 
         RequestLog::record($request, 'erasure_group_failed', null, ['group' => $groupKey, 'reason' => $reason]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function detail(GdprRequestStep $step): array
-    {
-        $decoded = $step->detail === null ? null : json_decode($step->detail, true);
-
-        return is_array($decoded) ? $decoded : [];
     }
 
     /**
