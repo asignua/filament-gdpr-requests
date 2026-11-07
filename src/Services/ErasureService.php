@@ -158,7 +158,7 @@ final class ErasureService
             ->update([
                 'status' => RequestStatus::Erasing->value,
                 // What the last run found is about the last run.
-                'erasure_plan' => json_encode(Arr::except($fresh->erasure_plan, 'findings'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'erasure_plan' => json_encode(Arr::except($fresh->erasure_plan ?? [], 'findings'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 'erasure_started_at' => now(),
                 'erasure_started_by' => $actorId,
                 'erasure_heartbeat_at' => now(),
