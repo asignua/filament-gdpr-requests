@@ -60,41 +60,30 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   9223372036854775807 on unsigned MariaDB keys and aborted the transaction on Postgres. Keys are compared as text.
 - Rule output is compared as text, so a masked 19-digit value counts as changed. A date in a datetime column, reordered
   json and padded `char` values count as unchanged.
-
 - A closure's own `ORDER BY` no longer breaks the chunked read (15 of 25 rows were left while the request read
   `fulfilled`): the order is dropped, and a limit, offset, `DISTINCT`, `GROUP BY` or `UNION` blocks the preview. The check
   after the run counts with a fresh, unchunked query, so it does not share a fault of the read it checks.
-
 - A subquery that a `matchedUsing()` closure builds through another model no longer keeps that model's soft-delete (or
   any other global) scope: the items of a soft-deleted order were left behind. Closures run with global scopes off.
-
 - A closure that reads its own table now runs before another group that deletes from that table (it ran after, found
   nothing, and two rows stayed). Fewer rows than confirmed are excused only by a deletion that ran earlier.
-
 - An entry that anonymizes or deletes rows a `retain` entry keeps blocks the preview (retained invoices were deleted while
   the report said they were kept).
-
 - An anonymization that changes where a row names its file (the path nulled or replaced) without `files: true` blocks
   the preview, like a deletion that leaves files behind; the file was orphaned.
-
 - A file that a row of another record still names is no longer removed: the preview (and every group run, and
   `gdpr:retention`) blocks when a path to remove is named by a row that stays, listing tables only.
-
 - **Complete** and **Refuse** set `closed_at`, so `gdpr:prune` wipes those requests after `request_retention_days`
   (before, only an explicit close or a finished erasure did, and the details of the others stayed for ever). Closing such
   a request later keeps the original date; requests that ended before this change are wiped by their last update.
-
 - The report after a run shows the legal basis and the kept-until date of retained groups (it showed them only in the
   live preview).
-
 - A partial erasure whose record changed its address had no way forward (the mismatch blocked, and the address could
   not be taken over). **Accept the record's e-mail** now works there until the record itself is erased: the request stays
   partial, and needs a new identity check and a new confirmation.
-
 - Postgres missed an address with `İ` (PHP lowercases it to two code points) or a word-final `Σ`. The query folds both
   on MariaDB and Postgres and PHP still decides; the lookup by e-mail compares in PHP too. README says what stays with
   the server's Unicode tables.
-
 - `testbench.yaml` (with its demo keys) is no longer in the package archive.
 
 ### Changed
