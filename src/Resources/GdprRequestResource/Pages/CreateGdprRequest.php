@@ -10,7 +10,6 @@ use Asignua\FilamentGdprRequests\Exceptions\GdprException;
 use Asignua\FilamentGdprRequests\Resources\Concerns\WarnsAboutSetup;
 use Asignua\FilamentGdprRequests\Resources\GdprRequestResource;
 use Asignua\FilamentGdprRequests\Services\RequestService;
-use Asignua\FilamentGdprRequests\Support\Gates;
 use Carbon\CarbonImmutable;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -22,11 +21,6 @@ class CreateGdprRequest extends CreateRecord
     use WarnsAboutSetup;
 
     protected static string $resource = GdprRequestResource::class;
-
-    protected function authorizeAccess(): void
-    {
-        abort_unless(Gates::allows(Gates::MANAGE, auth()->user()), 403);
-    }
 
     /**
      * The request and its subject link go through the service: it checks the map, the gate and stamps the deadline.

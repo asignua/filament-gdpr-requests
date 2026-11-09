@@ -2,6 +2,10 @@
 
 All notable changes to `asignua/filament-gdpr-requests` are documented here.
 
+## v1.0.1 - 2026-11-09
+
+- Security hardening for Filament 5.11.2+, where resource pages ask `getXAuthorizationResponse()` instead of `canX()`: the create rule (`gdpr.manage`) and the "never edit / delete" rules now live in the resource's `getCreateAuthorizationResponse()` / `getEditAuthorizationResponse()` / `getDeleteAuthorizationResponse()` / `getDeleteAnyAuthorizationResponse()`, so a page can no longer open for a user the resource meant to refuse. The register, view, create and erasure pages are covered by HTTP tests for the wrong and the right user.
+
 ## v1.0.0 - 2026-11-09
 
 - A register for data-subject requests (access, erasure, rectification, restriction, portability, objection) in a

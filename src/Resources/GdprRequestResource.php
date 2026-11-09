@@ -34,6 +34,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -54,24 +55,28 @@ class GdprRequestResource extends Resource
             && Gates::allows(Gates::VIEW, auth()->user());
     }
 
-    public static function canCreate(): bool
+    /**
+     * The rules live in the `get…AuthorizationResponse()` methods: from Filament 5.11.2 the pages ask those, not `canX()`
+     * (which is `getXAuthorizationResponse()->allowed()` and so follows these by itself).
+     */
+    public static function getCreateAuthorizationResponse(): Response
     {
-        return Gates::allows(Gates::MANAGE, auth()->user());
+        return Gates::allows(Gates::MANAGE, auth()->user()) ? Response::allow() : Response::deny();
     }
 
-    public static function canEdit(Model $record): bool
+    public static function getEditAuthorizationResponse(Model $record): Response
     {
-        return false;
+        return Response::deny();
     }
 
-    public static function canDelete(Model $record): bool
+    public static function getDeleteAuthorizationResponse(Model $record): Response
     {
-        return false;
+        return Response::deny();
     }
 
-    public static function canDeleteAny(): bool
+    public static function getDeleteAnyAuthorizationResponse(): Response
     {
-        return false;
+        return Response::deny();
     }
 
     public static function getModelLabel(): string
