@@ -84,6 +84,9 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   (before, only an explicit close or a finished erasure did, and the details of the others stayed for ever). Closing such
   a request later keeps the original date; requests that ended before this change are wiped by their last update.
 
+- The report after a run shows the legal basis and the kept-until date of retained groups (it showed them only in the
+  live preview).
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

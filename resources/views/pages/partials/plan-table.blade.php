@@ -77,9 +77,11 @@
                             @foreach ($group->rules as $rule)
                                 <div class="sub">{{ $rule }}</div>
                             @endforeach
-                        @elseif ($group && $group->action === 'retain')
-                            <div>{{ Lang::t('plan.basis', ['basis' => $group->basis]) }}</div>
-                            <div>{{ Lang::t('plan.until', ['date' => $group->retainedUntil ?? '—']) }}</div>
+                        @elseif ($row['action'] === 'retain')
+                            {{-- After the run the live preview is gone: the step keeps what it was retained on, and until when. --}}
+                            @php($kept = $step?->details() ?? [])
+                            <div>{{ Lang::t('plan.basis', ['basis' => $group?->basis ?? ($kept['basis'] ?? '—')]) }}</div>
+                            <div>{{ Lang::t('plan.until', ['date' => $group?->retainedUntil ?? ($kept['until'] ?? '—')]) }}</div>
                         @elseif ($row['action'] === 'delete')
                             <div>{{ Lang::t('plan.delete_note') }}</div>
                         @elseif ($row['action'] === 'none')
