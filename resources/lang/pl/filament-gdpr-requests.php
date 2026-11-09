@@ -301,6 +301,7 @@ return [
         'files_left_behind' => 'Wiersze :table wskazują pliki, ale ich usunięcie zostawi te pliki i nic już na nie nie wskaże. Użyj Erase::delete(files: true).',
         'loose_match' => 'Wierszy :table z niemal tym samym kluczem osoby w :column (inna wielkość liter lub odstępy): :rows. Wtyczka porównuje dokładnie i nie wie, czyje są. Popraw te wiersze.',
         'selection_unchunkable' => 'Własne dopasowanie w :table używa :clause, więc jego wierszy nie da się bezpiecznie czytać partiami i część mogłaby zostać. Dopasuj wiersze prostymi warunkami.',
+        'retain_overlap' => ':rows wiersz(y) z :table, które „:kept” zachowuje z podstawy prawnej, zostałyby też zmienione lub usunięte przez ten wpis, choć raport mówi, że są zachowane. Zawęź jedno z dwóch dopasowań.',
     ],
     'requester_mail' => [
         'received' => [

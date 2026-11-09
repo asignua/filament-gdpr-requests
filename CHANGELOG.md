@@ -71,6 +71,9 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - A closure that reads its own table now runs before another group that deletes from that table (it ran after, found
   nothing, and two rows stayed). Fewer rows than confirmed are excused only by a deletion that ran earlier.
 
+- An entry that anonymizes or deletes rows a `retain` entry keeps blocks the preview (retained invoices were deleted while
+  the report said they were kept).
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

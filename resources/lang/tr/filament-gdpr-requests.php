@@ -301,6 +301,7 @@ return [
         'files_left_behind' => ':table satırları dosyaları gösteriyor, ancak silinirlerse bu dosyalar kalır ve artık hiçbir şey onları göstermez. Erase::delete(files: true) kullanın.',
         'loose_match' => ':table tablosunda :column içinde bu kişinin anahtarına neredeyse eşit :rows satır var (farklı büyük/küçük harf veya boşluk). Eklenti tam eşleşme arar ve bunların kime ait olduğunu söyleyemez. Bu satırları düzeltin.',
         'selection_unchunkable' => ':table üzerindeki özel eşleştirme :clause kullanıyor; satırları parça parça güvenle okunamaz ve bazıları geride kalabilir. Satırları basit koşullarla bulun.',
+        'retain_overlap' => '":kept" tarafından yasal gerekçeyle saklanan :table tablosundaki :rows satır bu kayıt tarafından da değiştirilir veya silinirdi; oysa rapor bunların saklandığını söylüyor. İki eşleştirmeden birini daraltın.',
     ],
     'requester_mail' => [
         'received' => [

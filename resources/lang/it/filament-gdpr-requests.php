@@ -301,6 +301,7 @@ return [
         'files_left_behind' => 'Le righe di :table indicano dei file, ma eliminandole quei file resterebbero senza più alcun riferimento. Usa Erase::delete(files: true).',
         'loose_match' => ':rows riga/righe di :table hanno in :column quasi la chiave di questa persona (maiuscole o spazi diversi). Il plugin confronta esattamente e non può dire se sono sue. Correggi quelle righe.',
         'selection_unchunkable' => 'La corrispondenza personalizzata su :table usa :clause, quindi le sue righe non possono essere lette a blocchi in sicurezza e alcune potrebbero restare. Trova le righe con condizioni semplici.',
+        'retain_overlap' => ':rows riga/righe di :table che «:kept» conserva per motivo legale verrebbero anche modificate o eliminate da questa voce, mentre il rapporto dice che sono conservate. Restringi una delle due corrispondenze.',
     ],
     'requester_mail' => [
         'received' => [

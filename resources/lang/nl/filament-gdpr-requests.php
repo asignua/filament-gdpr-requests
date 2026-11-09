@@ -301,6 +301,7 @@ return [
         'files_left_behind' => 'Rijen van :table noemen bestanden, maar bij verwijderen blijven die achter en verwijst er niets meer naar. Gebruik Erase::delete(files: true).',
         'loose_match' => ':rows rij(en) van :table bevatten in :column bijna de sleutel van deze persoon (andere hoofdletters of spaties). De plugin vergelijkt exact en kan niet zeggen of ze van deze persoon zijn. Corrigeer die rijen.',
         'selection_unchunkable' => 'De eigen match op :table gebruikt :clause, dus de rijen kunnen niet veilig in delen worden gelezen en sommige zouden kunnen blijven staan. Zoek de rijen met eenvoudige voorwaarden.',
+        'retain_overlap' => ':rows rij(en) van :table die ":kept" om een wettelijke reden bewaart, zouden ook door deze regel worden gewijzigd of verwijderd, terwijl het rapport zegt dat ze bewaard blijven. Beperk een van beide matches.',
     ],
     'requester_mail' => [
         'received' => [

@@ -81,6 +81,7 @@ final class Planner
             $groups[] = $plan;
         }
 
+        $this->checkRetainOverlap($groups);
         $readers = $this->closureReaders($groups);
         $groups = $this->order($groups, $schema, $readers);
         $this->checkClosureOrder($groups, $readers);
@@ -432,6 +433,42 @@ final class Planner
         } catch (Throwable) {
             // If the check itself cannot run, assume the worst: the run must not start on a guess.
             return PHP_INT_MAX;
+        }
+    }
+
+    /**
+     * `retain` promises the row stays whole, and the preview and the report say so. A row that another group of the same
+     * run anonymizes or deletes would be reported as kept while it is gone: the erasing group is blocked.
+     *
+     * @param list<GroupPlan> $groups
+     */
+    private function checkRetainOverlap(array $groups): void
+    {
+        foreach ($groups as $kept) {
+            if ($kept->action !== Erase::RETAIN || $kept->isBlocked()) {
+                continue;
+            }
+
+            foreach ($groups as $other) {
+                if ($other === $kept || !$other->erases() || $other->isBlocked() || $other->table() !== $kept->table()) {
+                    continue;
+                }
+
+                $table = $kept->table();
+                $key = $kept->selection->keyName();
+
+                try {
+                    $rows = $kept->selection->query()->toBase()
+                        ->whereIn($table.'.'.$key, $other->selection->query()->toBase()->select($table.'.'.$key))
+                        ->count();
+                } catch (Throwable) {
+                    $rows = PHP_INT_MAX; // the run must not start on a guess
+                }
+
+                if ($rows > 0) {
+                    $other->addBlocker('retain_overlap', ['table' => $table, 'kept' => $kept->label(), 'rows' => $rows === PHP_INT_MAX ? '?' : $rows]);
+                }
+            }
         }
     }
 

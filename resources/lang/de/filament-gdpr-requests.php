@@ -301,6 +301,7 @@ return [
         'files_left_behind' => 'Zeilen von :table nennen Dateien, beim Löschen blieben diese zurück und nichts würde mehr auf sie verweisen. Verwenden Sie Erase::delete(files: true).',
         'loose_match' => ':rows Zeile(n) von :table enthalten in :column fast den Schlüssel dieser Person (andere Schreibweise oder Leerzeichen). Das Plugin vergleicht exakt und kann nicht sagen, ob sie ihr gehören. Korrigieren Sie diese Zeilen.',
         'selection_unchunkable' => 'Die eigene Zuordnung in :table verwendet :clause, daher lassen sich ihre Zeilen nicht sicher stückweise lesen und einige könnten übrig bleiben. Finden Sie die Zeilen mit einfachen Bedingungen.',
+        'retain_overlap' => ':rows Zeile(n) von :table, die „:kept“ aus rechtlichem Grund aufbewahrt, würden auch von diesem Eintrag geändert oder gelöscht, während der Bericht sie als aufbewahrt ausweist. Grenzen Sie eine der beiden Zuordnungen ein.',
     ],
     'requester_mail' => [
         'received' => [

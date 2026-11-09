@@ -301,6 +301,7 @@ return [
         'files_left_behind' => 'Las filas de :table nombran archivos, pero al borrarlas esos archivos quedarían sin ninguna referencia. Use Erase::delete(files: true).',
         'loose_match' => ':rows fila(s) de :table tienen en :column casi la clave de esta persona (otras mayúsculas o espacios). El plugin compara exactamente y no puede saber si son suyas. Corrija esas filas.',
         'selection_unchunkable' => 'La coincidencia propia en :table usa :clause, así que sus filas no pueden leerse por partes con seguridad y algunas podrían quedar. Busque las filas con condiciones simples.',
+        'retain_overlap' => ':rows fila(s) de :table que «:kept» conserva por motivo legal también serían modificadas o eliminadas por esta entrada, mientras el informe dice que se conservan. Restrinja una de las dos coincidencias.',
     ],
     'requester_mail' => [
         'received' => [

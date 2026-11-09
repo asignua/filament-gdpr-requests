@@ -301,6 +301,7 @@ return [
         'files_left_behind' => 'As linhas de :table apontam para arquivos, mas excluí-las deixaria esses arquivos sem nenhuma referência. Use Erase::delete(files: true).',
         'loose_match' => ':rows linha(s) de :table têm em :column quase a chave desta pessoa (maiúsculas ou espaços diferentes). O plugin compara exatamente e não sabe se são dela. Corrija essas linhas.',
         'selection_unchunkable' => 'A correspondência personalizada em :table usa :clause, então suas linhas não podem ser lidas em partes com segurança e algumas poderiam ficar. Encontre as linhas com condições simples.',
+        'retain_overlap' => ':rows linha(s) de :table que ":kept" mantém por motivo legal também seriam alteradas ou excluídas por esta entrada, enquanto o relatório diz que são mantidas. Restrinja uma das duas correspondências.',
     ],
     'requester_mail' => [
         'received' => [
