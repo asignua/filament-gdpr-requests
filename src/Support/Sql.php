@@ -8,6 +8,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Expression;
+use Throwable;
 
 /**
  * The address comparison in the database. SQL's TRIM strips spaces and nothing else, and SQLite's LOWER knows only
@@ -73,13 +74,23 @@ final class Sql
      * lastSegment()) under the same expression: normalising keeps a path's last segment as it is, so a spelling of the
      * file always contains it, and a table where every path starts with `/` is not read whole.
      *
+     * A column whose text form is not its bytes (comparesPathsAsText) gets no constraint at all: every row is read and
+     * PHP compares them.
+     *
      * @param Builder<Model> $query
      * @param list<string>   $segments
      */
     public static function whereNonCanonicalPath(Builder $query, string $qualifiedColumn, array $segments = []): void
     {
+        $connection = $query->getModel()->getConnection();
+        $dot = strrpos($qualifiedColumn, '.');
+
+        if ($dot !== false && !self::comparesPathsAsText($connection, substr($qualifiedColumn, 0, $dot), substr($qualifiedColumn, $dot + 1))) {
+            return;
+        }
+
         $column = $query->getQuery()->getGrammar()->wrap($qualifiedColumn);
-        $like = match ($query->getModel()->getConnection()->getDriverName()) {
+        $like = match ($connection->getDriverName()) {
             'pgsql' => 'CAST('.$column.' AS TEXT) COLLATE "C" LIKE ?',
             'mysql', 'mariadb' => 'CONVERT('.$column.' USING utf8mb4) COLLATE utf8mb4_bin LIKE ?',
             default => $column.' LIKE ?',
@@ -96,6 +107,49 @@ final class Sql
         }
 
         $query->where(static fn (Builder $where) => $any($where, Files::NON_CANONICAL));
+    }
+
+    /**
+     * Whether a LIKE on the column's text form sees the path the application wrote. On Postgres only a string type does
+     * (a domain carries its base type's category): a bytea casts to its output format, `\x2f646f6373…` in hex, where no
+     * segment and no pattern of a path is ever found, and an escape-format output turns every non-ASCII byte into an
+     * octal escape. MariaDB's CONVERT reads the bytes of a BLOB or VARBINARY as they are, but a BINARY(n) holds the
+     * path padded with NUL to its width, which neither the exact lookup nor a trailing pattern sees through. SQLite
+     * compares the bytes as stored. A column that cannot be looked up counts as not: reading it whole is slow, missing a
+     * row deletes a file another row names.
+     */
+    public static function comparesPathsAsText(Connection $connection, string $table, string $column): bool
+    {
+        if (in_array($connection->getDriverName(), ['mysql', 'mariadb'], true)) {
+            try {
+                // SHOW COLUMNS, not information_schema: it also sees a temporary table.
+                foreach ($connection->select('SHOW COLUMNS FROM '.$connection->getQueryGrammar()->wrapTable($table)) as $field) {
+                    if (is_object($field) && ($field->Field ?? null) === $column) {
+                        return !str_starts_with(strtolower((string) ($field->Type ?? '')), 'binary');
+                    }
+                }
+            } catch (Throwable) {
+                return false;
+            }
+
+            return false;
+        }
+
+        if ($connection->getDriverName() !== 'pgsql') {
+            return true;
+        }
+
+        try {
+            $category = $connection->selectOne(
+                'SELECT t.typcategory AS category FROM pg_attribute a JOIN pg_type t ON t.oid = a.atttypid'
+                .' WHERE a.attrelid = CAST(? AS regclass) AND a.attname = ? AND a.attnum > 0 AND NOT a.attisdropped',
+                [$connection->getQueryGrammar()->wrapTable($table), $column],
+            );
+        } catch (Throwable) {
+            return false;
+        }
+
+        return is_object($category) && ($category->category ?? null) === 'S';
     }
 
     /**

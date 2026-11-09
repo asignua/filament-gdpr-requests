@@ -207,8 +207,9 @@ Before anything can be confirmed, the preview reads your live schema and **block
   or `files(..., lookup: fn ($query, array $paths) => ...)`, and the rows that may name a file are found through the
   index. With `columns`, one exact lookup asks for the normalised path on every disk over the same storage, and one
   scan per column reads the rows whose path is not in its normal form (a backslash, an empty, `.` or `..` segment,
-  matched by `LIKE`); PHP compares the files of both. A table that stores most paths that way (say, all with a leading
-  `/`) is read almost whole each time. Without either, every row of the table is read: a million rows took 28 seconds
+  matched by `LIKE` and narrowed to rows that hold the file's last segment); PHP compares the files of both. A column
+  whose text form is not the bytes it holds (a Postgres `bytea`, a NUL-padded MariaDB `BINARY(n)`) is read whole
+  instead; `BLOB` and `VARBINARY` are fine. Without either, every row of the table is read: a million rows took 28 seconds
   per preview against 0.3 with `columns`, and the preview lists such tables under **Slow checks**;
 - another entry anonymizes or deletes rows that a `retain` entry keeps: the report would call them kept;
 - a row you delete is still referenced by rows that are not deleted with it (soft-deleted ones counted);

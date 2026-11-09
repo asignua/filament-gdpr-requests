@@ -77,6 +77,8 @@ final class Applier
             return [];
         }
 
+        // Postgres hands a bytea over as a stream: the resolver gets the bytes it holds, not `Resource id #7`.
+        $row = array_map(static fn (mixed $value): mixed => is_resource($value) ? (string) stream_get_contents($value, -1, 0) : $value, $row);
         $model = (new ($selection->entry->model))->newFromBuilder($row);
         $files = [];
 

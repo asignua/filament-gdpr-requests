@@ -663,8 +663,11 @@ final class Planner
             $segments = array_values(array_unique(array_map(static fn (array $file): string => Files::lastSegment($file['path']), $files)));
             $chunks = in_array('', $segments, true) ? [[]] : array_chunk($segments, self::LOOKUP_CHUNK);
 
+            $connection = (new ($entry->model))->getConnection();
+
             foreach ($columns as $column) {
-                foreach ($chunks as $chunk) {
+                // A column read whole (Sql::comparesPathsAsText) is read once, not once per chunk.
+                foreach (Sql::comparesPathsAsText($connection, $table, $column) ? $chunks : [[]] as $chunk) {
                     $selections[] = Selection::constrained($entry, static fn (EloquentBuilder $query) => Sql::whereNonCanonicalPath($query, $table.'.'.$column, $chunk));
                 }
             }

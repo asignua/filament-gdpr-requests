@@ -124,6 +124,13 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   (LIKE-escaped, under the same expression); the normaliser never changes that segment, and the spelling matrix shows
   no new misses. A million leading-slash rows (MariaDB 11.4 / PostgreSQL 16): preview 0.23 / 0.23 s, confirm
   0.80 / 0.30 s, run 0.64 / 0.41 s; `LargeTableBenchmark` prints this case too.
+- A Postgres `bytea` path column no longer loses the shared-file check. Cast to text it reads as hex (`\x2f646f…`), so
+  the last-segment `LIKE` matched none of `/docs/Ada.txt`, `docs/Ada.txt/.`, `docs/Ada.txt/x/..` or `docs/./Ada.txt`,
+  and PDO handed even an exact match over as a stream (`Resource id #7` to the resolver): Ada's file was deleted while
+  Bob's row named it. A column whose text form is not its bytes (Postgres outside the string types, a domain over
+  `bytea` included; a NUL-padded MariaDB `BINARY(n)`) is now read whole, once, and streams are read as bytes before the
+  resolver sees the row. `BLOB` and `VARBINARY` keep the narrowed scan; the matrix covers them, `bytea` and a `bytea`
+  domain (21 column types).
 
 ### Changed
 
