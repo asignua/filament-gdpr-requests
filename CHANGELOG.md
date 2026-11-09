@@ -65,6 +65,9 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   `fulfilled`): the order is dropped, and a limit, offset, `DISTINCT`, `GROUP BY` or `UNION` blocks the preview. The check
   after the run counts with a fresh, unchunked query, so it does not share a fault of the read it checks.
 
+- A subquery that a `matchedUsing()` closure builds through another model no longer keeps that model's soft-delete (or
+  any other global) scope: the items of a soft-deleted order were left behind. Closures run with global scopes off.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

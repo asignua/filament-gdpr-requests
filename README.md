@@ -167,7 +167,8 @@ How to write it well:
 - **The linked record decides who a request is about.** E-mail groups match on the address of the root row, not on what
   was typed on the request. Declare it with `subject(email: 'email')`: without it, an entry using `matchedByEmail()` blocks
   the run.
-- **Soft-deleted rows are always included.** Global scopes are removed from every query the plugin runs. `delete` really
+- **Soft-deleted rows are always included.** Global scopes are removed from every query the plugin runs, including the
+  subqueries a `matchedUsing()` closure builds through other models while it runs. `delete` really
   removes rows, soft-deleted ones too.
 - **Writes bypass model events** (an observer must not send mail mid-erasure) and do not touch `updated_at`.
 - **`retain`** keeps the row whole, shows the legal basis and the date up to which it is kept in the preview and the

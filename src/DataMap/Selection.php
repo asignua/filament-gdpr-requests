@@ -18,8 +18,9 @@ use Throwable;
  * The rows one map entry selects: for one subject, or (for retention) by an age constraint.
  *
  * Global scopes are always removed: a tenant, "active" or soft-delete scope must never hide a row from an
- * erasure or an export. For column / e-mail matches every row is checked again in PHP (exact comparison), because
- * a case-insensitive or padded collation would otherwise let `= 'abc'` also select 'ABC' - a different person.
+ * erasure or an export, not even inside a subquery a closure of the map builds (see unscoped()). For column / e-mail
+ * matches every row is checked again in PHP (exact comparison), because a case-insensitive or padded collation would
+ * otherwise let `= 'abc'` also select 'ABC' - a different person.
  */
 final class Selection
 {
@@ -91,7 +92,8 @@ final class Selection
         }
 
         if ($this->constraint !== null) {
-            ($this->constraint)($query);
+            $constraint = $this->constraint;
+            self::unscoped(static fn () => $constraint($query));
         }
 
         return $query;
@@ -240,7 +242,31 @@ final class Selection
                     break;
                 }
 
-                $callback($query, $subject);
+                self::unscoped(static fn () => $callback($query, $subject));
+        }
+    }
+
+    /**
+     * Runs a closure of the map with every global scope switched off, so that a builder it makes for itself (a subquery
+     * through another model, say) does not bring back the soft-delete or tenant scope this query has just shed. Scopes
+     * attach when a builder is made, so the subquery stays unscoped after the closure returns. A model booted in the
+     * meantime keeps the scopes it registered.
+     *
+     * @template T
+     *
+     * @param Closure(): T $callback
+     *
+     * @return T
+     */
+    private static function unscoped(Closure $callback): mixed
+    {
+        $scopes = Model::getAllGlobalScopes();
+        Model::setAllGlobalScopes([]);
+
+        try {
+            return $callback();
+        } finally {
+            Model::setAllGlobalScopes($scopes + Model::getAllGlobalScopes());
         }
     }
 
