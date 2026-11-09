@@ -95,6 +95,8 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   on MariaDB and Postgres and PHP still decides; the lookup by e-mail compares in PHP too. README says what stays with
   the server's Unicode tables.
 
+- `testbench.yaml` (with its demo keys) is no longer in the package archive.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.
