@@ -108,6 +108,11 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   (`LIKE`, byte by byte) and normalises them in PHP; a seeded test compares both checks over 150 generated spellings on
   three disks. With a million canonical rows (MariaDB 11.4 / PostgreSQL 16): preview 0.15 / 0.13 s → 0.34 / 0.25 s,
   confirm 0.11 / 0.20 s → 0.82 / 0.48 s, run 0.11 / 0.32 s → 0.62 / 0.54 s.
+- A Postgres column with its own collation is folded like the probe. The case-folding check tested only the database
+  default, so a mapped column `COLLATE "C"` passed it, its `LOWER` left non-ASCII capitals alone, the preview found 0
+  rows and the request read `fulfilled` with the data still there. The address expression now adds `COLLATE "default"`
+  after the cast. MariaDB was already consistent (`CONVERT … USING utf8mb4` drops the column collation); tests cover
+  `C`, `POSIX` and `ucs_basic` columns and five MariaDB collations.
 
 ### Changed
 

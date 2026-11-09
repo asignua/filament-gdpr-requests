@@ -7,10 +7,13 @@ namespace Asignua\FilamentGdprRequests\Tests\Database;
 use Asignua\FilamentGdprRequests\Exceptions\UnsupportedEnvironment;
 use Asignua\FilamentGdprRequests\Services\ErasureService;
 use Asignua\FilamentGdprRequests\Support\Environment;
+use Asignua\FilamentGdprRequests\Support\Pseudonym;
+use Asignua\FilamentGdprRequests\Support\Sql;
 use Asignua\FilamentGdprRequests\Tests\Support\RunsErasures;
 use Asignua\FilamentGdprRequests\Tests\Support\Shop;
 use Asignua\FilamentGdprRequests\Tests\TestCase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Throwable;
 use Workbench\App\Models\Customer;
 use Workbench\App\Models\Ticket;
@@ -93,5 +96,63 @@ class CaseFoldingTest extends TestCase
             config(['database.default' => $default]);
             DB::purge('gdpr_fold_c');
         }
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function columnCollations(): array
+    {
+        return [
+            'pgsql C' => ['pgsql', '"C"'],
+            'pgsql POSIX' => ['pgsql', '"POSIX"'],
+            'pgsql ucs_basic' => ['pgsql', 'ucs_basic'],
+            'mariadb utf8mb4_bin' => ['mariadb', 'utf8mb4 COLLATE utf8mb4_bin'],
+            'mariadb utf8mb4_general_ci' => ['mariadb', 'utf8mb4 COLLATE utf8mb4_general_ci'],
+            'mariadb utf8mb4_turkish_ci' => ['mariadb', 'utf8mb4 COLLATE utf8mb4_turkish_ci'],
+            'mariadb utf8mb4_unicode_520_ci' => ['mariadb', 'utf8mb4 COLLATE utf8mb4_unicode_520_ci'],
+            'mariadb utf8mb3_general_ci' => ['mariadb', 'utf8mb3 COLLATE utf8mb3_general_ci'],
+        ];
+    }
+
+    /**
+     * The probe answers for the database default; a column with a collation of its own must be folded the same way, or a
+     * database that passes the probe still misses the address in that column.
+     */
+    #[DataProvider('columnCollations')]
+    public function test_a_column_with_its_own_collation_folds_like_the_probe(string $driver, string $collation): void
+    {
+        if (env('GDPR_TEST_DB') !== $driver) {
+            $this->markTestSkipped($driver.' only.');
+        }
+
+        $connection = DB::connection();
+        // A temporary table: MariaDB commits the test's transaction on any other DDL.
+        $connection->statement($driver === 'pgsql'
+            ? 'CREATE TEMPORARY TABLE gdpr_collated (address VARCHAR(255) COLLATE '.$collation.')'
+            : 'CREATE TEMPORARY TABLE gdpr_collated (address VARCHAR(255) CHARACTER SET '.$collation.')');
+        $connection->insert('INSERT INTO gdpr_collated (address) VALUES (?)', [Environment::FOLDING_PROBE]);
+        [$sql, $bindings] = Sql::normalized($connection, $connection->getQueryGrammar()->wrap('address'));
+
+        $this->assertNull(Environment::foldingDifference($connection));
+        $this->assertSame(
+            Sql::fold((string) Pseudonym::normalizeEmail(Environment::FOLDING_PROBE), $connection),
+            (string) ((array) $connection->selectOne('SELECT '.$sql.' AS folded FROM gdpr_collated', $bindings))['folded'],
+        );
+    }
+
+    public function test_an_address_in_a_postgres_column_collated_c_is_found(): void
+    {
+        if (env('GDPR_TEST_DB') !== 'pgsql') {
+            $this->markTestSkipped('Postgres only: MariaDB folds after CONVERT, which drops the column collation (above).');
+        }
+
+        DB::statement('ALTER TABLE tickets ALTER COLUMN customer_email TYPE VARCHAR(255) COLLATE "C"');
+        $customer = Shop::customer('Someone', 'ΟΔΥΣ-İnci-ÄÉŁЖ@customer.example');
+
+        $plan = app(ErasureService::class)->plan($this->erasureOf($customer));
+
+        $this->assertNull(Environment::foldingDifference(DB::connection()));
+        $this->assertSame(1, $plan->group(Ticket::class)?->matched, 'LOWER under the column\'s C collation would leave the capitals alone.');
     }
 }

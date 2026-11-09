@@ -100,12 +100,15 @@ final class Sql
         // what PHP accepts; every caller then compares in PHP exactly.
         return match ($connection->getDriverName()) {
             'sqlite' => [self::sqliteFunction($connection).'('.$expression.')', []],
-            // Postgres text cannot hold NUL, not even as an argument.
+            // Postgres text cannot hold NUL, not even as an argument. LOWER folds by the collation of its input, and a
+            // column may carry its own (`COLLATE "C"` folds ASCII only): COLLATE "default" makes it the database
+            // default, the one Environment's probe checked.
             'pgsql' => [
-                'REPLACE(LOWER(REPLACE(BTRIM(CAST('.$expression.' AS TEXT), ?), ?, ?)), ?, ?)',
+                'REPLACE(LOWER(REPLACE(BTRIM(CAST('.$expression.' AS TEXT) COLLATE "default", ?), ?, ?)), ?, ?)',
                 [self::characters(), self::DOTTED_I, self::DOTTED_I_LOWER, self::SIGMA_FINAL, self::SIGMA],
             ],
-            // CONVERT first: on a latin1 column the expression would otherwise run without Unicode.
+            // CONVERT first: on a latin1 column the expression would otherwise run without Unicode. Its result takes the
+            // default collation of utf8mb4 whatever the column's, so LOWER folds a column the way it folds the probe.
             'mysql', 'mariadb' => [
                 "REPLACE(LOWER(REPLACE(REGEXP_REPLACE(CONVERT({$expression} USING utf8mb4), ?, ''), ?, ?)), ?, ?)",
                 ['\A['.self::characterClass().']+|['.self::characterClass().']+\z', self::DOTTED_I, self::DOTTED_I_LOWER, self::SIGMA_FINAL, self::SIGMA],

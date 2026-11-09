@@ -58,7 +58,8 @@ final class Environment
 
     /**
      * What the server makes of the probe when it differs from PHP, or null. Asked once per connection and process: the
-     * answer belongs to the database (Postgres' LC_CTYPE, MariaDB's utf8mb4 collation), not to the request.
+     * answer belongs to the database (Postgres' LC_CTYPE, MariaDB's utf8mb4 collation), not to the request. A column's
+     * own collation does not change it: Sql::normalized() folds every column under the collation probed here.
      */
     public static function foldingDifference(Connection $connection): ?string
     {
