@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'La cancellazione è bloccata da :count problema/i.',
         'pseudonym_key_missing' => 'GDPR_PSEUDONYM_KEY (versione :version) manca o è più corta di :min caratteri. Creane una con php -r "echo bin2hex(random_bytes(32));", aggiungila a .env come GDPR_PSEUDONYM_KEY ed esegui php artisan config:clear. Il plugin non ripiega su APP_KEY.',
         'tenancy_unsupported' => 'I pannelli con tenancy non sono supportati in questa versione.',
+        'lowercase_unsupported' => 'Il database converte il testo in minuscolo diversamente da PHP (:driver dà ":server", PHP ":php"), quindi un indirizzo con tali maiuscole verrebbe ignorato. Usa un database con LC_CTYPE Unicode (Postgres) o una collation utf8mb4 Unicode (MariaDB).',
         'already_running' => 'Per questa richiesta è già in corso una cancellazione.',
         'cannot_close' => 'Una richiesta in questo stato non può essere chiusa.',
         'cannot_complete' => 'Solo una richiesta in corso che non sia di cancellazione può essere segnata come evasa.',

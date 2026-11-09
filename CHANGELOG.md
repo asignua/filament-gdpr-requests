@@ -85,6 +85,9 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   on MariaDB and Postgres and PHP still decides; the lookup by e-mail compares in PHP too. README says what stays with
   the server's Unicode tables.
 - `testbench.yaml` (with its demo keys) is no longer in the package archive.
+- A database whose `LOWER` knows less than PHP's (Postgres created with `LC_CTYPE 'C'` folds ASCII only) is refused
+  with a message that shows both answers. Before, an address with a non-ASCII capital was missed by the preview and by the
+  check after the run, and the request read `fulfilled` with the rows still there.
 
 ### Changed
 

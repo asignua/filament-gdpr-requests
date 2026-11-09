@@ -170,8 +170,11 @@ How to write it well:
 - **Addresses** are compared after trimming white space (invisible characters included) and PHP's `mb_strtolower`. The
   database narrows the rows and PHP decides. Two letters lowercase differently in PHP and in SQL (`İ`, and a word-final
   `Σ`); the query folds both so that it never misses such an address. For every other letter the query relies on the
-  server's own lowercase tables (on SQLite PHP answers itself): an address in a script your server's version of Unicode
-  does not know may be missed, so check such rows by hand.
+  server's own lowercase tables (on SQLite PHP answers itself). Before any preview, run, export or command the plugin asks
+  the server to lowercase capitals of Latin, Greek, Cyrillic and Armenian and **refuses to work** when the answer differs
+  from PHP's: a Postgres database created with `LC_CTYPE 'C'` lowercases ASCII only and would miss `ÄDA@…`. Use a
+  Unicode `LC_CTYPE` (Postgres) or a Unicode `utf8mb4` collation (MariaDB). An address in a script your server's version
+  of Unicode does not know may still be missed, so check such rows by hand.
 - **Soft-deleted rows are always included.** Global scopes are removed from every query the plugin runs, including the
   subqueries a `matchedUsing()` closure builds through other models while it runs. `delete` really
   removes rows, soft-deleted ones too.

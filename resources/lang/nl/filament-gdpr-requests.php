@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'De wissing wordt geblokkeerd door :count probleem/problemen.',
         'pseudonym_key_missing' => 'GDPR_PSEUDONYM_KEY (versie :version) ontbreekt of is korter dan :min tekens. Maak er een met php -r "echo bin2hex(random_bytes(32));", zet die in .env als GDPR_PSEUDONYM_KEY en voer php artisan config:clear uit. De plugin valt niet terug op APP_KEY.',
         'tenancy_unsupported' => 'Panelen met tenancy worden in deze versie niet ondersteund.',
+        'lowercase_unsupported' => 'De database zet tekst anders om naar kleine letters dan PHP (:driver geeft ":server", PHP ":php"), dus een adres met zulke hoofdletters zou worden gemist. Gebruik een database met een Unicode-LC_CTYPE (Postgres) of een Unicode-utf8mb4-collatie (MariaDB).',
         'already_running' => 'Voor dit verzoek loopt al een wissing.',
         'cannot_close' => 'Een verzoek in deze status kan niet worden gesloten.',
         'cannot_complete' => 'Alleen een lopend verzoek dat geen wissing is, kan als afgehandeld worden gemarkeerd.',

@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'The erasure is blocked by :count problem(s).',
         'pseudonym_key_missing' => 'GDPR_PSEUDONYM_KEY (version :version) is missing or shorter than :min characters. Create one with php -r "echo bin2hex(random_bytes(32));", add it to .env as GDPR_PSEUDONYM_KEY and run php artisan config:clear. The plugin does not fall back to APP_KEY.',
         'tenancy_unsupported' => 'Panels with tenancy are not supported in this version.',
+        'lowercase_unsupported' => 'The database lowercases text differently from PHP (:driver gives ":server", PHP ":php"), so an address with such capitals would be missed. Use a database with a Unicode LC_CTYPE (Postgres) or a Unicode utf8mb4 collation (MariaDB).',
         'already_running' => 'An erasure is already running for this request.',
         'cannot_close' => 'A request in this state cannot be closed.',
         'cannot_complete' => 'Only an in-progress request that is not an erasure can be marked as fulfilled.',

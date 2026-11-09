@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'Usunięcie jest zablokowane przez problemy: :count.',
         'pseudonym_key_missing' => 'Brak GDPR_PSEUDONYM_KEY (wersja :version) lub jest krótszy niż :min znaków. Utwórz go poleceniem php -r "echo bin2hex(random_bytes(32));", dodaj do .env jako GDPR_PSEUDONYM_KEY i uruchom php artisan config:clear. Wtyczka nie używa zastępczo APP_KEY.',
         'tenancy_unsupported' => 'Panele z dzierżawcami nie są obsługiwane w tej wersji.',
+        'lowercase_unsupported' => 'Baza danych zamienia tekst na małe litery inaczej niż PHP (:driver daje „:server”, PHP „:php”), więc adres z takimi wielkimi literami zostałby pominięty. Użyj bazy z unicode\'owym LC_CTYPE (Postgres) lub unicode\'owym porównywaniem utf8mb4 (MariaDB).',
         'already_running' => 'Usuwanie dla tego wniosku już trwa.',
         'cannot_close' => 'Wniosku w tym stanie nie można zamknąć.',
         'cannot_complete' => 'Jako zrealizowany można oznaczyć tylko wniosek w toku, który nie jest usunięciem.',

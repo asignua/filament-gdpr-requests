@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'La supresión está bloqueada por :count problema(s).',
         'pseudonym_key_missing' => 'Falta GDPR_PSEUDONYM_KEY (versión :version) o tiene menos de :min caracteres. Cree una con php -r "echo bin2hex(random_bytes(32));", añádala a .env como GDPR_PSEUDONYM_KEY y ejecute php artisan config:clear. El plugin no recurre a APP_KEY.',
         'tenancy_unsupported' => 'Los paneles con inquilinos no se admiten en esta versión.',
+        'lowercase_unsupported' => 'La base de datos pasa el texto a minúsculas de forma distinta a PHP (:driver da ":server", PHP ":php"), así que se omitiría una dirección con esas mayúsculas. Use una base de datos con LC_CTYPE Unicode (Postgres) o una intercalación utf8mb4 Unicode (MariaDB).',
         'already_running' => 'Ya se está suprimiendo para esta solicitud.',
         'cannot_close' => 'Una solicitud en este estado no se puede cerrar.',
         'cannot_complete' => 'Solo una solicitud en curso que no sea de supresión puede marcarse como atendida.',

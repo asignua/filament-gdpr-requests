@@ -57,31 +57,47 @@ final class Sql
      */
     public static function whereNormalizedEquals(Builder $query, string $qualifiedColumn, string $normalizedValue): void
     {
-        $base = $query->getQuery();
-        $column = $base->getGrammar()->wrap($qualifiedColumn);
-        $connection = $query->getModel()->getConnection();
+        $column = $query->getQuery()->getGrammar()->wrap($qualifiedColumn);
+        [$sql, $bindings] = self::normalized($query->getModel()->getConnection(), $column);
 
+        $query->whereRaw(new Expression($sql.' = ?'), [...$bindings, self::fold($normalizedValue, $query->getModel()->getConnection())]); // @phpstan-ignore argument.type
+    }
+
+    /**
+     * The normalised form of an SQL expression (a wrapped column, or `?` for a bound probe) on this connection, with the
+     * bindings it needs before any of the caller's.
+     *
+     * @return array{string, list<string>}
+     */
+    public static function normalized(Connection $connection, string $expression): array
+    {
         // The server's LOWER maps one letter to one letter; PHP's mb_strtolower does not for two of them (İ becomes i plus
         // a combining dot, a final Σ becomes ς). Both sides are folded the same way here, so the query finds a superset of
         // what PHP accepts; every caller then compares in PHP exactly.
-        $folded = str_replace(self::SIGMA_FINAL, self::SIGMA, $normalizedValue);
-
-        [$sql, $bindings] = match ($connection->getDriverName()) {
-            'sqlite' => [self::sqliteFunction($connection).'('.$column.') = ?', [$normalizedValue]],
+        return match ($connection->getDriverName()) {
+            'sqlite' => [self::sqliteFunction($connection).'('.$expression.')', []],
             // Postgres text cannot hold NUL, not even as an argument.
             'pgsql' => [
-                'REPLACE(LOWER(REPLACE(BTRIM(CAST('.$column.' AS TEXT), ?), ?, ?)), ?, ?) = ?',
-                [self::characters(), self::DOTTED_I, self::DOTTED_I_LOWER, self::SIGMA_FINAL, self::SIGMA, $folded],
+                'REPLACE(LOWER(REPLACE(BTRIM(CAST('.$expression.' AS TEXT), ?), ?, ?)), ?, ?)',
+                [self::characters(), self::DOTTED_I, self::DOTTED_I_LOWER, self::SIGMA_FINAL, self::SIGMA],
             ],
             // CONVERT first: on a latin1 column the expression would otherwise run without Unicode.
             'mysql', 'mariadb' => [
-                "REPLACE(LOWER(REPLACE(REGEXP_REPLACE(CONVERT({$column} USING utf8mb4), ?, ''), ?, ?)), ?, ?) = ?",
-                ['\A['.self::characterClass().']+|['.self::characterClass().']+\z', self::DOTTED_I, self::DOTTED_I_LOWER, self::SIGMA_FINAL, self::SIGMA, $folded],
+                "REPLACE(LOWER(REPLACE(REGEXP_REPLACE(CONVERT({$expression} USING utf8mb4), ?, ''), ?, ?)), ?, ?)",
+                ['\A['.self::characterClass().']+|['.self::characterClass().']+\z', self::DOTTED_I, self::DOTTED_I_LOWER, self::SIGMA_FINAL, self::SIGMA],
             ],
-            default => ['LOWER(TRIM('.$column.')) = ?', [$normalizedValue]],
+            default => ['LOWER(TRIM('.$expression.'))', []],
         };
+    }
 
-        $query->whereRaw(new Expression($sql), $bindings); // @phpstan-ignore argument.type
+    /**
+     * The value as the server-side expression leaves an address PHP has normalised: SQLite answers with PHP itself.
+     */
+    public static function fold(string $normalizedValue, Connection $connection): string
+    {
+        return in_array($connection->getDriverName(), ['pgsql', 'mysql', 'mariadb'], true)
+            ? str_replace(self::SIGMA_FINAL, self::SIGMA, $normalizedValue)
+            : $normalizedValue;
     }
 
     private static function characters(): string

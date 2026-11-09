@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'Видалення заблоковане: проблем — :count.',
         'pseudonym_key_missing' => 'GDPR_PSEUDONYM_KEY (версія :version) немає або він коротший за :min символів. Створіть ключ командою php -r "echo bin2hex(random_bytes(32));", додайте його в .env як GDPR_PSEUDONYM_KEY і виконайте php artisan config:clear. Плагін не підміняє його ключем APP_KEY.',
         'tenancy_unsupported' => 'Панелі з тенантами у цій версії не підтримуються.',
+        'lowercase_unsupported' => 'База даних переводить текст у нижній регістр інакше, ніж PHP (:driver дає «:server», PHP — «:php»), тож адресу з такими великими літерами буде пропущено. Потрібна база з Unicode LC_CTYPE (Postgres) або Unicode-сортуванням utf8mb4 (MariaDB).',
         'already_running' => 'Видалення для цього запиту вже виконується.',
         'cannot_close' => 'Запит у цьому стані не можна закрити.',
         'cannot_complete' => 'Виконаним можна позначити лише запит у роботі, який не є видаленням.',

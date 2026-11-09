@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'L\'effacement est bloqué par :count problème(s).',
         'pseudonym_key_missing' => 'GDPR_PSEUDONYM_KEY (version :version) est absente ou fait moins de :min caractères. Créez-en une avec php -r "echo bin2hex(random_bytes(32));", ajoutez-la à .env sous le nom GDPR_PSEUDONYM_KEY et lancez php artisan config:clear. Le plugin ne se rabat pas sur APP_KEY.',
         'tenancy_unsupported' => 'Les panneaux avec multi-tenance ne sont pas pris en charge dans cette version.',
+        'lowercase_unsupported' => 'La base de données met le texte en minuscules autrement que PHP (:driver donne « :server », PHP « :php »), une adresse avec de telles majuscules serait donc manquée. Utilisez une base avec un LC_CTYPE Unicode (Postgres) ou une collation utf8mb4 Unicode (MariaDB).',
         'already_running' => 'Un effacement est déjà en cours pour cette demande.',
         'cannot_close' => 'Une demande dans cet état ne peut pas être clôturée.',
         'cannot_complete' => 'Seule une demande en cours qui n\'est pas un effacement peut être marquée comme traitée.',

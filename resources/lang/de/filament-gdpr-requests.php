@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'Die Löschung ist durch :count Problem(e) blockiert.',
         'pseudonym_key_missing' => 'GDPR_PSEUDONYM_KEY (Version :version) fehlt oder ist kürzer als :min Zeichen. Erzeugen Sie einen Schlüssel mit php -r "echo bin2hex(random_bytes(32));", tragen Sie ihn als GDPR_PSEUDONYM_KEY in .env ein und führen Sie php artisan config:clear aus. Das Plugin weicht nicht auf APP_KEY aus.',
         'tenancy_unsupported' => 'Panels mit Mandanten werden in dieser Version nicht unterstützt.',
+        'lowercase_unsupported' => 'Die Datenbank wandelt Text anders in Kleinbuchstaben um als PHP (:driver ergibt „:server“, PHP „:php“), daher würde eine Adresse mit solchen Großbuchstaben übersehen. Verwenden Sie eine Datenbank mit Unicode-LC_CTYPE (Postgres) oder einer Unicode-utf8mb4-Kollation (MariaDB).',
         'already_running' => 'Für diese Anfrage läuft bereits eine Löschung.',
         'cannot_close' => 'Eine Anfrage in diesem Zustand kann nicht geschlossen werden.',
         'cannot_complete' => 'Nur eine laufende Anfrage, die keine Löschung ist, kann als erledigt markiert werden.',

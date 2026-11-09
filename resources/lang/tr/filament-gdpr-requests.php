@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'Silme :count sorun nedeniyle engellendi.',
         'pseudonym_key_missing' => 'GDPR_PSEUDONYM_KEY (sürüm :version) eksik veya :min karakterden kısa. php -r "echo bin2hex(random_bytes(32));" ile bir anahtar oluşturun, .env dosyasına GDPR_PSEUDONYM_KEY olarak ekleyin ve php artisan config:clear komutunu çalıştırın. Eklenti APP_KEY kullanmaz.',
         'tenancy_unsupported' => 'Çok kiracılı paneller bu sürümde desteklenmez.',
+        'lowercase_unsupported' => 'Veritabanı metni PHP\'den farklı biçimde küçük harfe çeviriyor (:driver ":server" veriyor, PHP ":php"), bu yüzden bu büyük harfleri içeren bir adres gözden kaçar. Unicode LC_CTYPE (Postgres) veya Unicode utf8mb4 harmanlaması (MariaDB) olan bir veritabanı kullanın.',
         'already_running' => 'Bu talep için zaten bir silme çalışıyor.',
         'cannot_close' => 'Bu durumdaki talep kapatılamaz.',
         'cannot_complete' => 'Yalnızca silme olmayan, devam eden bir talep tamamlandı olarak işaretlenebilir.',

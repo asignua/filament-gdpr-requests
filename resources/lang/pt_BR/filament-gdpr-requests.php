@@ -230,6 +230,7 @@ return [
         'plan_blocked' => 'A eliminação está bloqueada por :count problema(s).',
         'pseudonym_key_missing' => 'GDPR_PSEUDONYM_KEY (versão :version) está ausente ou tem menos de :min caracteres. Crie uma com php -r "echo bin2hex(random_bytes(32));", adicione-a ao .env como GDPR_PSEUDONYM_KEY e execute php artisan config:clear. O plugin não recorre à APP_KEY.',
         'tenancy_unsupported' => 'Painéis com multi-tenancy não são suportados nesta versão.',
+        'lowercase_unsupported' => 'O banco de dados converte o texto para minúsculas de forma diferente do PHP (:driver dá ":server", PHP ":php"), então um endereço com essas maiúsculas seria ignorado. Use um banco com LC_CTYPE Unicode (Postgres) ou uma collation utf8mb4 Unicode (MariaDB).',
         'already_running' => 'Já há uma eliminação em andamento para esta solicitação.',
         'cannot_close' => 'Uma solicitação neste estado não pode ser encerrada.',
         'cannot_complete' => 'Somente uma solicitação em andamento que não seja de eliminação pode ser marcada como atendida.',
