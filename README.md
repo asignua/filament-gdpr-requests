@@ -205,9 +205,11 @@ Before anything can be confirmed, the preview reads your live schema and **block
   (`/docs/a.txt`, `./docs//a.txt` and `docs/a.txt` are one file) and disks by the storage they point at (a `scoped` disk
   is its parent plus the prefix). Declare where the path is stored, `files(..., columns: ['path'])` on an indexed column
   or `files(..., lookup: fn ($query, array $paths) => ...)`, and the rows that may name a file are found through the
-  index (the normalised path with a leading `/`, `./` or backslashes, on every disk over the same storage; PHP compares
-  the files of what it finds). Without either, every row of the table is read: a million rows took 28 seconds per
-  preview against 0.2 with `columns`, and the preview lists such tables under **Slow checks**;
+  index. With `columns`, one exact lookup asks for the normalised path on every disk over the same storage, and one
+  scan per column reads the rows whose path is not in its normal form (a backslash, an empty, `.` or `..` segment,
+  matched by `LIKE`); PHP compares the files of both. A table that stores most paths that way (say, all with a leading
+  `/`) is read almost whole each time. Without either, every row of the table is read: a million rows took 28 seconds
+  per preview against 0.3 with `columns`, and the preview lists such tables under **Slow checks**;
 - another entry anonymizes or deletes rows that a `retain` entry keeps: the report would call them kept;
 - a row you delete is still referenced by rows that are not deleted with it (soft-deleted ones counted);
 - a row you delete names files through `files()` and the strategy does not remove them: use `Erase::delete(files: true)`,

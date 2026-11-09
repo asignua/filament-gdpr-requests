@@ -96,12 +96,26 @@ class SharedFilesTest extends TestCase
         $this->assertContains('file_shared', array_map(static fn (Blocker $blocker): string => $blocker->code, $plan->allBlockers()));
     }
 
-    public function test_a_file_named_in_another_spelling_after_the_confirmation_stays_on_the_disk(): void
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function spellingsAfterTheConfirmation(): array
+    {
+        return [
+            'leading slash' => ['/docs/Ada.txt'],
+            'double slash' => ['docs//Ada.txt'],
+            'parent segment' => ['docs/x/../Ada.txt'],
+            'dot segment' => ['docs/./Ada.txt'],
+        ];
+    }
+
+    #[DataProvider('spellingsAfterTheConfirmation')]
+    public function test_a_file_named_in_another_spelling_after_the_confirmation_stays_on_the_disk(string $path): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
         $bob = Shop::customer('Bob', 'bob@customer.example');
         $request = $this->confirmed($ada);
-        Document::query()->where('customer_id', $bob->id)->update(['path' => '/docs/Ada.txt']);
+        Document::query()->where('customer_id', $bob->id)->update(['path' => $path]);
 
         try {
             $this->execute($request);
@@ -111,6 +125,81 @@ class SharedFilesTest extends TestCase
 
         $this->assertTrue(Storage::disk('local')->exists('docs/Ada.txt'), "Bob's file is not deleted.");
         $this->assertNotSame(RequestStatus::Fulfilled, $request->refresh()->status);
+    }
+
+    /**
+     * Spellings of Ada's file (and near misses that are other files) built from random leads, separators and tails, on
+     * the disk itself, a scoped disk and a second disk name over the same root. Seeded: a failure names its spelling.
+     *
+     * @return list<array{string, string}>
+     */
+    private static function generatedSpellings(): array
+    {
+        $bases = [['local', ['docs', 'Ada.txt']], ['local-docs', ['Ada.txt']], ['local-again', ['docs', 'Ada.txt']]];
+        $leads = ['', '', '/', './', '//', '/./', 'x/../', './x/../', '\\', '.\\', 'a/b/../../', '../', '/../'];
+        $separators = ['/', '/', '//', '///', '/./', '/y/../', '\\', '\\\\', '/.\\', '\\./', '/z/./../'];
+        $tails = ['', '', '/', '/.', '//', '\\', '/x/..', '.bak', '/..'];
+        $spellings = [
+            ['local', 'docs//Ada.txt'], ['local', 'docs/x/../Ada.txt'], ['local', 'docs/./Ada.txt'],
+            ['local', 'docs/ada.txt'], ['local', 'docs/x/Ada.txt'], ['local', 'docsAda.txt'], ['local', 'docs/../Ada.txt'],
+        ];
+        mt_srand(20261109);
+
+        for ($i = 0; $i < 150; $i++) {
+            [$disk, $segments] = $bases[$i % 3];
+            $path = $leads[mt_rand(0, count($leads) - 1)];
+
+            foreach ($segments as $k => $segment) {
+                $path .= ($k > 0 ? $separators[mt_rand(0, count($separators) - 1)] : '').$segment;
+            }
+
+            $spellings[] = [$disk, $path.$tails[mt_rand(0, count($tails) - 1)]];
+        }
+
+        mt_srand();
+
+        return array_values(array_unique($spellings, SORT_REGULAR));
+    }
+
+    public function test_declared_file_columns_catch_every_spelling_the_full_scan_catches(): void
+    {
+        config([
+            'filesystems.disks.local-docs' => ['driver' => 'scoped', 'disk' => 'local', 'prefix' => 'docs'],
+            'filesystems.disks.local-again' => ['driver' => 'local', 'root' => rtrim((string) config('filesystems.disks.local.root'), '/').'/'],
+        ]);
+        $ada = Shop::customer('Ada', 'ada@customer.example');
+        $bob = Shop::customer('Bob', 'bob@customer.example');
+        $request = $this->erasureOf($ada);
+        $target = Files::identity('local', 'docs/Ada.txt');
+        $differences = [];
+        $same = 0;
+
+        foreach (self::generatedSpellings() as [$disk, $path]) {
+            Document::query()->where('customer_id', $bob->id)->update(['disk' => $disk, 'path' => $path]);
+            $indexed = in_array('file_shared', $this->codes(app(ErasureService::class)->plan($request)), true);
+            $this->declareDocuments(columns: false);
+            $full = in_array('file_shared', $this->codes(app(ErasureService::class)->plan($request)), true);
+            $this->declareDocuments(columns: true);
+
+            $this->assertSame(Files::identity($disk, $path) === $target, $full, "The full scan decides by identity: {$disk}:{$path}");
+            $same += $full ? 1 : 0;
+
+            if ($indexed !== $full) {
+                $differences[] = $disk.':'.$path.($full ? ' (missed)' : ' (extra)');
+            }
+        }
+
+        $this->assertSame([], $differences);
+        $this->assertGreaterThan(50, $same, 'Most generated spellings name the same file.');
+    }
+
+    private function declareDocuments(bool $columns): void
+    {
+        $this->registry()->forget(Document::class);
+        PersonalData::for(Document::class)->label('Documents')->of(Customer::class)->matchedBy('customer_id')
+            ->export(['id', 'title', 'created_at'])
+            ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]], columns: $columns ? ['path'] : [])
+            ->erase(Erase::delete(files: true));
     }
 
     public function test_different_files_keep_different_identities(): void

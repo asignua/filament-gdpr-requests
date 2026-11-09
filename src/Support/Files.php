@@ -38,9 +38,18 @@ final class Files
     }
 
     /**
-     * The spellings a row may use for this file, for an indexed lookup: the normalised path with a leading `/`, `./` or
-     * backslashes, on this disk and on every configured disk over the same storage (the path inside a scoped disk drops
-     * its prefix). A rarer spelling (`a//b`, `x/../a`) is not among them; PHP compares whatever the lookup finds.
+     * LIKE patterns (escape `!`, compared byte by byte) that every stored path the normaliser would change matches: a
+     * backslash, a leading, trailing or doubled `/`, and a `.` or `..` segment (`./`, `../`, `/./`, `/../`, a final `/.`
+     * or `/..`). A few canonical paths match too (a name that starts with a dot); PHP compares whatever is found. A
+     * path that matches none is its own normal form, so the exact spellings below find it. One the normaliser refuses
+     * (control characters, `..` above the root) stays as it is and is found by its exact spelling.
+     */
+    public const array NON_CANONICAL = ['%\\%', '/%', '%/', '%//%', '.%', '%/.%'];
+
+    /**
+     * The canonical spellings a row may use for this file, for an exact indexed lookup: the path as given and its
+     * normalised form on this disk and on every configured disk over the same storage (the path inside a scoped disk
+     * drops its prefix). Every other spelling is non-canonical and found through NON_CANONICAL.
      *
      * @return list<string>
      */
@@ -66,13 +75,7 @@ final class Files
             }
         }
 
-        $spellings = [$path];
-
-        foreach (array_unique($inside) as $one) {
-            array_push($spellings, $one, '/'.$one, './'.$one, str_replace('/', '\\', $one));
-        }
-
-        return array_values(array_unique($spellings));
+        return array_values(array_unique([$path, ...$inside]));
     }
 
     /**

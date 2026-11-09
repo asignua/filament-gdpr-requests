@@ -64,6 +64,30 @@ final class Sql
     }
 
     /**
+     * Rows whose path column is not in its normal form (Files::NON_CANONICAL), compared byte by byte: a collation
+     * would only slow the scan down (MariaDB's utf8mb4 LIKE is about three times slower) or refuse LIKE outright (a
+     * nondeterministic one on Postgres). Slashes, dots and the backslash are the same bytes in every ASCII-compatible
+     * character set, which is what a path column uses.
+     *
+     * @param Builder<Model> $query
+     */
+    public static function whereNonCanonicalPath(Builder $query, string $qualifiedColumn): void
+    {
+        $column = $query->getQuery()->getGrammar()->wrap($qualifiedColumn);
+        $like = match ($query->getModel()->getConnection()->getDriverName()) {
+            'pgsql' => 'CAST('.$column.' AS TEXT) COLLATE "C" LIKE ?',
+            'mysql', 'mariadb' => $column.' LIKE BINARY ?',
+            default => $column.' LIKE ?',
+        };
+
+        $query->where(static function (Builder $where) use ($like): void {
+            foreach (Files::NON_CANONICAL as $pattern) {
+                $where->orWhereRaw($like." ESCAPE '!'", [$pattern]); // @phpstan-ignore argument.type (the column is wrapped by the grammar)
+            }
+        });
+    }
+
+    /**
      * The normalised form of an SQL expression (a wrapped column, or `?` for a bound probe) on this connection, with the
      * bindings it needs before any of the caller's.
      *

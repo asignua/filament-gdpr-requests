@@ -102,6 +102,12 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   checks only its own group's files. With a million other rows in `documents` (MariaDB 11.4 / PostgreSQL 16): preview
   28.5 / 28.2 s → 0.20 / 0.17 s, confirm 99.3 / 97.8 s → 0.12 / 0.21 s, run 85.5 / 84.1 s (30 431 queries) → 0.09 / 0.33 s
   (381). `tests/Benchmark/LargeTableBenchmark.php` (`GDPR_BENCH=1`) prints these.
+- The indexed shared-file check misses no spelling the full scan catches. It asked only for a few spellings of the path,
+  so Bob's row naming `docs//Ada.txt`, `docs/x/../Ada.txt` or `docs/./Ada.txt` was not found, Ada's file was deleted and
+  the request read `fulfilled`. It now adds, per declared column, the rows whose stored path is not in its normal form
+  (`LIKE`, byte by byte) and normalises them in PHP; a seeded test compares both checks over 150 generated spellings on
+  three disks. With a million canonical rows (MariaDB 11.4 / PostgreSQL 16): preview 0.15 / 0.13 s → 0.34 / 0.25 s,
+  confirm 0.11 / 0.20 s → 0.82 / 0.48 s, run 0.11 / 0.32 s → 0.62 / 0.54 s.
 
 ### Changed
 

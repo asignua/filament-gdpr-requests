@@ -18,6 +18,7 @@ use Asignua\FilamentGdprRequests\Support\Environment;
 use Asignua\FilamentGdprRequests\Support\Files;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Asignua\FilamentGdprRequests\Support\Schema;
+use Asignua\FilamentGdprRequests\Support\Sql;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
@@ -653,6 +654,12 @@ final class Planner
                         }
                     });
                 });
+            }
+
+            // Plus every row whose path is not in its normal form (`docs//a`, `x/../a`, `/a`): no list of spellings
+            // covers those, so they are read and PHP normalises them. One query per column.
+            foreach ($columns as $column) {
+                $selections[] = Selection::constrained($entry, static fn (EloquentBuilder $query) => Sql::whereNonCanonicalPath($query, $table.'.'.$column));
             }
         }
 
