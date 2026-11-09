@@ -195,6 +195,8 @@ Before anything can be confirmed, the preview reads your live schema and **block
 - a table that is not in this subject's map references a mapped table (add it, or `GdprRequests::acknowledge()` it). A table
   mapped only for another subject does not count;
 - a callback changes its own output: the check after the run could never tell a finished row from an unfinished one;
+- a `matchedUsing()` (or retention) query uses a limit, an offset, `DISTINCT`, `GROUP BY`/`HAVING` or a `UNION`: rows are
+  read by key in chunks, and such a clause would apply per chunk. An `ORDER BY` of the closure is simply dropped;
 - a `matchedUsing()` query reads a table this run changes and foreign keys force that table to go first. Otherwise such a
   closure simply runs before the group it reads;
 - rows hold almost the person's key (other letter case, padding): the plugin matches exactly and does not guess whose they

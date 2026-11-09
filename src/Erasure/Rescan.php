@@ -40,8 +40,10 @@ final class Rescan
         foreach ($plan->groups as $group) {
             $key = $group->key();
 
-            if ($group->remaining() > 0) {
-                $remaining[$key] = $group->remaining();
+            $left = max($group->remaining(), $this->freshRemaining($group));
+
+            if ($left > 0) {
+                $remaining[$key] = $left;
             }
 
             $left = $this->filesLeft($group);
@@ -59,6 +61,31 @@ final class Rescan
         }
 
         return new Findings($remaining, $files, $mismatch, $blockers, $changed);
+    }
+
+    /**
+     * The same question as GroupPlan::remaining(), asked with a fresh, unchunked query: the check must not share a
+     * failure of the chunked read whose work it checks.
+     */
+    private function freshRemaining(GroupPlan $group): int
+    {
+        $strategy = $group->entry->getErase();
+
+        if ($group->isBlocked() || !$group->erases() || $strategy === null) {
+            return 0; // a blocker is reported on its own
+        }
+
+        $left = 0;
+
+        try {
+            foreach ($group->selection->freshRows() as $row) {
+                $left += !$strategy instanceof Anonymize || RowRules::changes($strategy, $group->table(), $group->selection->keyName(), $row) !== [] ? 1 : 0;
+            }
+        } catch (Throwable) {
+            return 0; // the planner's own read failed the same way and is a blocker already
+        }
+
+        return $left;
     }
 
     /**

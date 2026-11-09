@@ -61,6 +61,10 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - Rule output is compared as text, so a masked 19-digit value counts as changed. A date in a datetime column, reordered
   json and padded `char` values count as unchanged.
 
+- A closure's own `ORDER BY` no longer breaks the chunked read (15 of 25 rows were left while the request read
+  `fulfilled`): the order is dropped, and a limit, offset, `DISTINCT`, `GROUP BY` or `UNION` blocks the preview. The check
+  after the run counts with a fresh, unchunked query, so it does not share a fault of the read it checks.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

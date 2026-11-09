@@ -180,6 +180,14 @@ final class Planner
         $unrepeatable = [];
 
         try {
+            $unchunkable = $selection->unchunkable();
+
+            if ($unchunkable !== null) {
+                $plan->addBlocker('selection_unchunkable', ['table' => $table, 'clause' => $unchunkable]);
+
+                return $plan;
+            }
+
             foreach ($selection->rows((int) config('filament-gdpr-requests.erasure.chunk', 200)) as $row) {
                 $plan->matched++;
 

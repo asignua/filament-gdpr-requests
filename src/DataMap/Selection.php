@@ -109,7 +109,9 @@ final class Selection
         $this->accepted = 0;
         $this->rejected = 0;
 
-        foreach ($this->query()->toBase()->select($this->table().'.*')->lazyById($chunk, $this->table().'.'.$key, $key) as $row) {
+        // Reading by key needs the key order alone: an ORDER BY of the closure's own (latest(), say) would make every
+        // chunk after the first start from the wrong row, and the rows in between would never be seen.
+        foreach ($this->query()->reorder()->toBase()->select($this->table().'.*')->lazyById($chunk, $this->table().'.'.$key, $key) as $row) {
             $row = (array) $row;
 
             if ($this->accepts($row)) {
@@ -120,6 +122,42 @@ final class Selection
                 $this->rejected++;
             }
         }
+    }
+
+    /**
+     * Every selected row read in one go, without chunks: the check after a run counts with this, so that it does not
+     * share a blind spot of the chunked read it is checking.
+     *
+     * @return Generator<int, array<string, mixed>>
+     */
+    public function freshRows(): Generator
+    {
+        foreach ($this->query()->reorder()->toBase()->select($this->table().'.*')->cursor() as $row) {
+            $row = (array) $row;
+
+            if ($this->accepts($row)) {
+                yield $row;
+            }
+        }
+    }
+
+    /**
+     * What makes the selection unsafe to read by key in chunks, or null. A limit or an offset applies to every chunk
+     * instead of the whole; DISTINCT, GROUP BY, HAVING and UNION change what a "row" is, so a chunk boundary can split
+     * or repeat one. Such a selection could leave rows behind while every count agrees with itself.
+     */
+    public function unchunkable(): ?string
+    {
+        $base = $this->query()->toBase();
+
+        return match (true) {
+            $base->limit !== null || $base->unionLimit !== null => 'limit',
+            $base->offset !== null || $base->unionOffset !== null => 'offset',
+            $base->distinct !== false => 'distinct',
+            ($base->groups ?? []) !== [] || ($base->havings ?? []) !== [] => 'group by',
+            ($base->unions ?? []) !== [] => 'union',
+            default => null,
+        };
     }
 
     /**

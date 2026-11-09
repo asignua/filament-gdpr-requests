@@ -300,6 +300,7 @@ return [
         'subject_email_shared' => ':rows registros desta tabela têm este endereço, então ele não indica de quem são as linhas. Corrija os registros primeiro; até lá nada é buscado por ele.',
         'files_left_behind' => 'As linhas de :table apontam para arquivos, mas excluí-las deixaria esses arquivos sem nenhuma referência. Use Erase::delete(files: true).',
         'loose_match' => ':rows linha(s) de :table têm em :column quase a chave desta pessoa (maiúsculas ou espaços diferentes). O plugin compara exatamente e não sabe se são dela. Corrija essas linhas.',
+        'selection_unchunkable' => 'A correspondência personalizada em :table usa :clause, então suas linhas não podem ser lidas em partes com segurança e algumas poderiam ficar. Encontre as linhas com condições simples.',
     ],
     'requester_mail' => [
         'received' => [
