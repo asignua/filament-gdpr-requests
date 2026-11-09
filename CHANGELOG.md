@@ -91,6 +91,10 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - The shared-file check compares files as the disk reads them. `/docs/Ada.txt` on Bob's row and `docs/Ada.txt` on Ada's
   were two files to it, and Bob's file was deleted. Paths go through Flysystem's normaliser on both sides, and two disk
   names over one storage (a `scoped` disk, a second name for the same root) count as one disk.
+- A model that a `matchedUsing()` closure makes for the first time no longer brings its soft-delete scope back. In a fresh
+  queue worker it booted inside the closure, registered the scope while scopes were off, and an access export held one
+  of two order items. The query is built again once such a model is booted, so a warm and a fresh process find the same
+  rows.
 
 ### Changed
 

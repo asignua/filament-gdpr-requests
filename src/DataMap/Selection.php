@@ -85,6 +85,24 @@ final class Selection
      */
     public function query(): Builder
     {
+        // A model the closure makes for the first time boots while the scopes are off, and booting registers its scopes
+        // (soft deletes, say) again: the subquery it built then carries them. That model is booted now, so the query is
+        // built once more, with its scopes out of the way. Whether a model was booted before is not the closure's to know:
+        // a fresh queue worker and a warm web process must find the same rows.
+        for ($attempt = 1; ; $attempt++) {
+            [$query, $booted] = self::unscoped(fn (): Builder => $this->build());
+
+            if (!$booted || $attempt >= 3) {
+                return $query;
+            }
+        }
+    }
+
+    /**
+     * @return Builder<Model>
+     */
+    private function build(): Builder
+    {
         $query = $this->entry->model::query()->withoutGlobalScopes();
 
         if ($this->subject !== null) {
@@ -92,8 +110,7 @@ final class Selection
         }
 
         if ($this->constraint !== null) {
-            $constraint = $this->constraint;
-            self::unscoped(static fn () => $constraint($query));
+            ($this->constraint)($query);
         }
 
         return $query;
@@ -242,31 +259,35 @@ final class Selection
                     break;
                 }
 
-                self::unscoped(static fn () => $callback($query, $subject));
+                $callback($query, $subject);
         }
     }
 
     /**
-     * Runs a closure of the map with every global scope switched off, so that a builder it makes for itself (a subquery
-     * through another model, say) does not bring back the soft-delete or tenant scope this query has just shed. Scopes
-     * attach when a builder is made, so the subquery stays unscoped after the closure returns. A model booted in the
-     * meantime keeps the scopes it registered.
+     * Runs the closures of the map with every global scope switched off, so that a builder they make for themselves (a
+     * subquery through another model, say) does not bring back the soft-delete or tenant scope this query has just shed.
+     * Scopes attach when a builder is made, so the subquery stays unscoped after the closure returns. Says whether a model
+     * registered scopes meanwhile (it was booted inside): what was built then may carry them, see query().
      *
      * @template T
      *
      * @param Closure(): T $callback
      *
-     * @return T
+     * @return array{T, bool}
      */
-    private static function unscoped(Closure $callback): mixed
+    private static function unscoped(Closure $callback): array
     {
         $scopes = Model::getAllGlobalScopes();
         Model::setAllGlobalScopes([]);
+        $registered = [];
 
         try {
-            return $callback();
+            $result = $callback();
+            $registered = Model::getAllGlobalScopes();
+
+            return [$result, $registered !== []];
         } finally {
-            Model::setAllGlobalScopes($scopes + Model::getAllGlobalScopes());
+            Model::setAllGlobalScopes($scopes + ($registered === [] ? Model::getAllGlobalScopes() : $registered));
         }
     }
 
