@@ -94,6 +94,7 @@ class ExactValuesTest extends TestCase
 
     public function test_the_key_for_the_query_never_clamps(): void
     {
+        $this->registry()->forget(Customer::class);
         $root = PersonalData::for(Customer::class)->subject();
 
         $this->assertSame(PHP_INT_MAX, (new Subject($root, self::TOP))->keyValue());
@@ -107,6 +108,7 @@ class ExactValuesTest extends TestCase
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
         Customer::query()->whereKey($ada->id)->update(['phone' => '1234567890123456789']);
+        $this->registry()->forget(Customer::class);
         PersonalData::for(Customer::class)->label('Customer')->subject(email: 'email')->erase(Erase::anonymize([
             'name' => Rule::fixed('Erased customer'),
             'email' => Rule::uniqueToken('erased-', '@erased.invalid'),

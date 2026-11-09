@@ -218,6 +218,7 @@ class ExportTest extends TestCase
     public function test_an_undeclared_column_is_a_loud_error_not_a_silent_gap(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Ticket::class);
         $this->registry()->add(PersonalData::for(Ticket::class)->of(Customer::class)->matchedByEmail('customer_email')->export(['id', 'no_such_column'])->erase(Erase::delete()));
         $dpo = $this->user();
         $request = Shop::request($ada, RequestType::Access, $dpo);

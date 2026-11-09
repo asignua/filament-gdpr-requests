@@ -43,6 +43,7 @@ class PresentationTest extends TestCase
     public function test_a_fixed_null_on_a_not_null_column_blocks_the_preview(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->label('Customer')->subject(email: 'email')->erase(Erase::anonymize(['name' => Rule::fixed(null)])));
 
         $this->assertContains('not_null', $this->codes(Shop::request($ada, RequestType::Erasure, $this->user())));
@@ -51,6 +52,7 @@ class PresentationTest extends TestCase
     public function test_a_callback_that_returns_null_on_a_not_null_column_blocks_the_preview(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->label('Customer')->subject(email: 'email')->erase(Erase::anonymize(['name' => Rule::using(static fn () => null)])));
 
         $this->assertContains('not_null', $this->codes(Shop::request($ada, RequestType::Erasure, $this->user())));
@@ -59,6 +61,7 @@ class PresentationTest extends TestCase
     public function test_a_fixed_null_is_treated_as_a_null_everywhere_else(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Order::class);
         $this->registry()->add(PersonalData::for(Order::class)->label('Orders')->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize(['shipping_address' => Rule::fixed(null)])));
 
         $this->assertNotContains('not_null', $this->codes(Shop::request($ada, RequestType::Erasure, $this->user())));

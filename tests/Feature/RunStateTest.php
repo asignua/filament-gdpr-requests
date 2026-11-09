@@ -278,6 +278,7 @@ class RunStateTest extends TestCase
         Storage::disk('stuck')->put('docs/old.txt', 'x');
         $ada = Shop::customer('Ada', 'ada@customer.example');
         Document::query()->update(['disk' => 'stuck', 'path' => 'docs/old.txt', 'created_at' => now()->subDays(60)]);
+        $this->registry()->forget(Document::class);
         $this->registry()->add(PersonalData::for(Document::class)->label('Documents')->of(Customer::class)->matchedBy('customer_id')
             ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]])
             ->retention(Retention::after(days: 30, from: 'created_at')->then(Erase::delete(files: true))));

@@ -88,6 +88,7 @@ class PlanGapsTest extends TestCase
     public function test_deleting_a_row_that_names_a_file_without_removing_the_file_blocks(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Document::class);
         PersonalData::for(Document::class)->of(Customer::class)->matchedBy('customer_id')
             ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]])
             ->erase(Erase::delete());
@@ -105,6 +106,7 @@ class PlanGapsTest extends TestCase
     public function test_a_row_that_stays_keeps_naming_its_file(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Document::class);
         PersonalData::for(Document::class)->of(Customer::class)->matchedBy('customer_id')
             ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]])
             ->erase(Erase::anonymize(['title' => Rule::fixed('Erased')]));

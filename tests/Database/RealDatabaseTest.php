@@ -91,6 +91,7 @@ class RealDatabaseTest extends TestCase
         $ada = Shop::customer('Ada', 'ada@customer.example');
         $state = new \ArrayObject(['collide' => true]);
         // A callback vouching for uniqueness (so the preview lets it through) that really collides on the second row.
+        $this->registry()->forget(Order::class);
         $this->registry()->add(PersonalData::for(Order::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize([
             'number' => Rule::using(static fn ($original, array $row) => $state['collide'] ? 'same' : 'erased-'.$row['id'], unique: true),
             'shipping_address' => Rule::fixed('Erased'),
@@ -125,6 +126,7 @@ class RealDatabaseTest extends TestCase
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
         $log = tempnam(sys_get_temp_dir(), 'gdpr-calls');
+        $this->registry()->forget(Order::class);
         $this->registry()->add(PersonalData::for(Order::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize([
             'shipping_address' => Rule::using(static function ($original) use ($log) {
                 file_put_contents($log, getmypid()."\n", FILE_APPEND);

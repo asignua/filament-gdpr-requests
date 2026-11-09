@@ -158,6 +158,9 @@ How to write it well:
 - **One entry per model that holds the person's data**, and one root entry with `subject()`. Declare every column you want
   anonymized: a column without a rule is **not touched**, and a model without rules is not anonymized. There are no
   defaults.
+- **One declaration per group.** A model is its own group; to map it twice give the second entry a name
+  (`PersonalData::for(Media::class, 'customer-media')`). Declaring the same group again throws instead of quietly replacing
+  the first entry (whose rows would then be left out). To replace one on purpose, `app(PersonalDataRegistry::class)->forget($group)` first.
 - **Rules** are `Rule::null()`, `Rule::fixed($v)`, `Rule::hash()` (keyed digest, recognises its own output), `Rule::uniqueToken()`
   (for unique columns: derived from table, column and row key, so a rerun gives the same value) and `Rule::using(fn)` (yours;
   it must give the same result when applied to its own output; pass `unique: true` to vouch for a unique column).

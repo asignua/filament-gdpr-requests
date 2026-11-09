@@ -54,6 +54,7 @@ class RetentionTest extends TestCase
     {
         Shop::customer('Ada', 'ada@customer.example');
         // The policy says 1 day, but the legal retention (3650 days) still holds the invoice.
+        $this->registry()->forget(Invoice::class);
         $this->registry()->add(
             PersonalData::for(Invoice::class)->of(Customer::class)->matchedBy('customer_id')
                 ->erase(Erase::retain('Law', days: 3650, from: 'issued_at'))
@@ -68,6 +69,7 @@ class RetentionTest extends TestCase
     public function test_a_retain_without_a_policy_only_lists_expired_rows(): void
     {
         Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Invoice::class);
         $this->registry()->add(PersonalData::for(Invoice::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::retain('Law', days: 5, from: 'issued_at')));
         Invoice::query()->update(['issued_at' => now()->subDays(10)]);
 
@@ -83,6 +85,7 @@ class RetentionTest extends TestCase
     {
         Shop::customer('Ada', 'ada@customer.example');
         // Deleting customers older than a day while orders still reference them: blocked, nothing deleted.
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->subject()->erase(Erase::anonymize(['phone' => Rule::null()]))
             ->retention(Retention::after(days: 1, from: 'created_at')->then(Erase::delete())));
         Customer::query()->update(['created_at' => now()->subDays(5)]);

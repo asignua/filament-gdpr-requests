@@ -294,6 +294,7 @@ class ErasureTest extends TestCase
         $request = $this->erasure($ada);
         $this->confirm($request);
 
+        $this->registry()->forget(Ticket::class);
         $this->registry()->add(PersonalData::for(Ticket::class)->label('Support tickets')->of(Customer::class)->matchedByEmail('customer_email')->erase(Erase::anonymize(['body' => Rule::fixed('x')])));
 
         $this->expectException(InvalidTransition::class);
@@ -337,6 +338,7 @@ class ErasureTest extends TestCase
 
     public function test_a_rule_that_breaks_not_null_blocks_the_preview(): void
     {
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->subject()->erase(Erase::anonymize(['name' => Rule::null()])));
         $plan = app(ErasureService::class)->plan($this->erasure(Shop::customer('Ada', 'ada@customer.example')));
 
@@ -347,6 +349,7 @@ class ErasureTest extends TestCase
     public function test_a_constant_in_a_unique_column_blocks_when_more_than_one_row_is_touched(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Order::class);
         $this->registry()->add(PersonalData::for(Order::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize(['number' => Rule::fixed('X')])));
         $plan = app(ErasureService::class)->plan($this->erasure($ada));
 
@@ -357,6 +360,7 @@ class ErasureTest extends TestCase
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
         Customer::query()->create(['name' => 'Taken', 'email' => 'erased@erased.invalid']);
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->subject()->erase(Erase::anonymize(['email' => Rule::fixed('erased@erased.invalid')])));
         $plan = app(ErasureService::class)->plan($this->erasure($ada));
 
@@ -366,9 +370,11 @@ class ErasureTest extends TestCase
     public function test_a_callback_on_a_unique_column_blocks_unless_it_vouches_for_uniqueness(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->subject()->erase(Erase::anonymize(['email' => Rule::using(fn () => 'x@y.invalid')])));
         $this->assertContains('unique_callback', $this->codes(app(ErasureService::class)->plan($this->erasure($ada))));
 
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->subject()->erase(Erase::anonymize(['email' => Rule::using(fn ($v) => $v, unique: true)])));
         $this->assertNotContains('unique_callback', $this->codes(app(ErasureService::class)->plan($this->erasure($ada))));
     }
@@ -376,6 +382,7 @@ class ErasureTest extends TestCase
     public function test_a_value_too_long_for_the_column_and_a_hash_in_a_number_column_block(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->subject()->erase(Erase::anonymize([
             'name' => Rule::fixed(str_repeat('x', 300)),
             'birthday' => Rule::hash(),
@@ -393,6 +400,7 @@ class ErasureTest extends TestCase
     public function test_rules_on_the_key_the_match_column_or_a_foreign_key_block(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Order::class);
         $this->registry()->add(PersonalData::for(Order::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize([
             'id' => Rule::fixed(1),
             'customer_id' => Rule::fixed(9),
@@ -408,6 +416,7 @@ class ErasureTest extends TestCase
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
         // Orders become a delete, but the invoices (retained) have no FK to orders; use customers as the deleted parent.
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->subject()->erase(Erase::delete()));
         $plan = app(ErasureService::class)->plan($this->erasure($ada));
 
@@ -431,6 +440,7 @@ class ErasureTest extends TestCase
     public function test_no_matcher_and_a_missing_subject_model_block(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Ticket::class);
         $this->registry()->add(PersonalData::for(Ticket::class)->label('Loose')->erase(Erase::delete()));
         $codes = $this->codes(app(ErasureService::class)->plan($this->erasure($ada)));
 
@@ -441,6 +451,7 @@ class ErasureTest extends TestCase
     public function test_an_entry_without_an_erase_rule_is_left_untouched_and_said_so(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Ticket::class);
         $this->registry()->add(PersonalData::for(Ticket::class)->label('Support tickets')->of(Customer::class)->matchedByEmail('customer_email')->export(['id']));
         $request = $this->erasure($ada);
         $this->confirm($request);

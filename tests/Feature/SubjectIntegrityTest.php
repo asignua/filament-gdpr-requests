@@ -187,6 +187,7 @@ class SubjectIntegrityTest extends TestCase
     {
         $dpo = $this->user();
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->label('Customer')->subject()->erase(Erase::anonymize(['phone' => Rule::null()])));
         $request = GdprRequests::submit(RequestType::Erasure, null, 'Ada', subjectModel: Customer::class, subjectId: $ada->id);
         $this->verified(app(RequestService::class)->linkSubject($request, Customer::class, $ada->id, $dpo), $dpo);
@@ -201,6 +202,7 @@ class SubjectIntegrityTest extends TestCase
     {
         $dpo = $this->user();
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Customer::class);
         $this->registry()->add(PersonalData::for(Customer::class)->label('Customer')->subject()->erase(Erase::anonymize(['phone' => Rule::null()])));
         $request = Shop::request($ada, RequestType::Erasure, $dpo);
 

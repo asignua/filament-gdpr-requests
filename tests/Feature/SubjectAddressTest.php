@@ -57,6 +57,7 @@ class SubjectAddressTest extends TestCase
 
         $this->assertSame('ada@customer.example', Pseudonym::normalizeEmail($spelling));
 
+        $this->registry()->forget(Ticket::class);
         $entry = PersonalData::for(Ticket::class)->of(Customer::class)->matchedByEmail('customer_email')->export(['id'])->erase(Erase::delete());
         $selection = Selection::forSubject($entry, new Subject($this->registry()->rootFor(Customer::class), $ada->id, 'ada@customer.example'));
         $keys = array_map(static fn (array $row): int => (int) $row['id'], iterator_to_array($selection->rows(), false));

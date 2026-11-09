@@ -154,6 +154,7 @@ class ReconfirmTest extends TestCase
         $ada = Shop::customer('Ada', 'ada@customer.example');
         $request = $this->confirmed($ada);
         $this->runGroups($request);
+        $this->registry()->forget(Order::class);
         PersonalData::for(Order::class)->label('Orders')->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize([
             'shipping_address' => Rule::fixed('Erased'),
             'billing_name' => Rule::fixed('Erased by the second map'),

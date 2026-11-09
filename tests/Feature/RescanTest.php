@@ -104,6 +104,7 @@ class RescanTest extends TestCase
     public function test_a_file_that_should_be_gone_is_found(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Document::class);
         PersonalData::for(Document::class)->of(Customer::class)->matchedBy('customer_id')
             ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]])
             ->erase(Erase::anonymize(['title' => Rule::fixed('Erased')], files: true));
@@ -135,6 +136,7 @@ class RescanTest extends TestCase
     {
         $request = $this->confirmed(Shop::customer('Ada', 'ada@customer.example'));
         $this->runGroups($request);
+        $this->registry()->forget(Order::class);
         PersonalData::for(Order::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize(['billing_name' => Rule::fixed('Gone')]));
 
         $this->finalize($request);
@@ -174,7 +176,9 @@ class RescanTest extends TestCase
         $this->smallMap();
         $ada = Shop::customer('Ada', 'ada@customer.example');
         Invoice::query()->where('customer_id', $ada->id)->update(['billed_to' => 'ada@customer.example']);
+        $this->registry()->forget(Invoice::class);
         PersonalData::for(Invoice::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::delete());
+        $this->registry()->forget(Ticket::class);
         PersonalData::for(Ticket::class)->of(Customer::class)->erase(Erase::delete())
             ->matchedUsing(static function (Builder $query, Subject $subject): void {
                 $query->whereIn('customer_email', Invoice::query()->where('customer_id', $subject->keyValue())->select('billed_to'));
@@ -194,7 +198,9 @@ class RescanTest extends TestCase
     {
         $this->smallMap();
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Invoice::class);
         PersonalData::for(Invoice::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::delete());
+        $this->registry()->forget(Ticket::class);
         PersonalData::for(Ticket::class)->of(Customer::class)->erase(Erase::delete())
             ->matchedUsing(static function (Builder $query, Subject $subject): void {
                 $query->whereIn('customer_email', Invoice::query()->where('customer_id', $subject->keyValue())->pluck('billed_to')->all());
@@ -216,6 +222,7 @@ class RescanTest extends TestCase
                 $query->whereIn('order_id', Order::query()->where('customer_id', $subject->keyValue())->select('id'));
             });
         // The foreign key wants the items first, this closure wants them still there.
+        $this->registry()->forget(Order::class);
         PersonalData::for(Order::class)->label('Orders')->of(Customer::class)->erase(Erase::anonymize(['billing_name' => Rule::fixed('Erased')]))
             ->matchedUsing(static function (Builder $query, Subject $subject): void {
                 $query->whereIn('id', \Workbench\App\Models\OrderItem::query()->where('sku', 'SKU-1')->select('order_id'));
@@ -231,6 +238,7 @@ class RescanTest extends TestCase
         $this->smallMap();
         $state = new \ArrayObject(['hide' => false]);
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Ticket::class);
         PersonalData::for(Ticket::class)->label('Support tickets')->of(Customer::class)->erase(Erase::delete())
             ->matchedUsing(static function (Builder $query, Subject $subject) use ($state): void {
                 $state['hide'] ? $query->whereRaw('1 = 0') : $query->where('customer_email', $subject->email);
@@ -287,6 +295,7 @@ class RescanTest extends TestCase
     public function test_a_callback_that_changes_its_own_output_blocks_before_anything_happens(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Order::class);
         PersonalData::for(Order::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize([
             'shipping_address' => Rule::using(static fn (mixed $original): string => 'x'.$original),
         ]));
@@ -297,6 +306,7 @@ class RescanTest extends TestCase
     public function test_a_value_the_database_stores_differently_is_not_read_as_left_over(): void
     {
         $ada = Shop::customer('Ada', 'ada@customer.example');
+        $this->registry()->forget(Invoice::class);
         PersonalData::for(Invoice::class)->of(Customer::class)->matchedBy('customer_id')->erase(Erase::anonymize([
             'issued_at' => Rule::fixed('2000-01-01'),
             'amount' => Rule::fixed(0),

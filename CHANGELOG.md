@@ -28,6 +28,8 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - Failed file deletes are checked and reported; `gdpr:prune` and `gdpr:retention --apply` exit with a failure.
 - The plan fingerprint is an HMAC with the pseudonym key, so it no longer gives the subject id back.
 - `refuse`, `close` and `complete` are guarded by the database against a stale model.
+- A second declaration of the same map group is refused instead of silently replacing the first one (whose rows were then
+  left out while the request read `fulfilled`). `PersonalDataRegistry::forget()` replaces an entry on purpose.
 - All archives of the person are purged before an erasure reads `fulfilled`; one that survives keeps it `partial`.
 - `gdpr:remind` marks only what reached somebody and warns about a missing `notifyAdminsUsing()`.
 - The schema reader stays inside the current database (Laravel's `getTables()` without a schema lists them all on

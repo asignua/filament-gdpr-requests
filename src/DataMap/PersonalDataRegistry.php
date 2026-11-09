@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\DataMap;
 
+use InvalidArgumentException;
+
 /**
  * The data map of the application. Bound as a singleton; entries register themselves from PersonalData::for().
  */
@@ -15,9 +17,28 @@ final class PersonalDataRegistry
     /** @var array<string, string> table => reason */
     private array $acknowledged = [];
 
+    /**
+     * A group is declared once. A second declaration would quietly take the first one's place, and the rows the first
+     * one found would be left out of every export and erasure: it is refused. Name the group (`for($model, 'name')`) to
+     * map one model twice, or forget() the old entry first to replace it on purpose.
+     */
     public function add(PersonalData $entry): void
     {
+        $existing = $this->entries[$entry->group] ?? null;
+
+        if ($existing !== null && $existing !== $entry) {
+            throw new InvalidArgumentException("The data map already has an entry for [{$entry->group}]. Give the second one its own group: PersonalData::for(\$model, 'name').");
+        }
+
         $this->entries[$entry->group] = $entry;
+    }
+
+    /**
+     * Removes an entry, so that it can be declared again on purpose.
+     */
+    public function forget(string $group): void
+    {
+        unset($this->entries[$group]);
     }
 
     /**
