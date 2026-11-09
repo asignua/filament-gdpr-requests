@@ -68,6 +68,9 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - A subquery that a `matchedUsing()` closure builds through another model no longer keeps that model's soft-delete (or
   any other global) scope: the items of a soft-deleted order were left behind. Closures run with global scopes off.
 
+- A closure that reads its own table now runs before another group that deletes from that table (it ran after, found
+  nothing, and two rows stayed). Fewer rows than confirmed are excused only by a deletion that ran earlier.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

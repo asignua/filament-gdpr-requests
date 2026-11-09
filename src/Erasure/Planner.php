@@ -501,7 +501,8 @@ final class Planner
             }
 
             foreach ($groups as $target) {
-                if ($target->table() !== $reader->table() && $target->erases() && $reader->selection->reads($target->table())) {
+                // Another group, not another table: a group that deletes from the closure's own table changes what it reads.
+                if ($target !== $reader && $target->erases() && $reader->selection->reads($target->table())) {
                     $readers[$target->key()][] = $reader->key();
                 }
             }

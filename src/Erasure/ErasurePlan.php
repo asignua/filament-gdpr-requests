@@ -56,13 +56,17 @@ final class ErasurePlan
     }
 
     /**
-     * Another group deletes from the same table, so rows this one counted may be gone for a good reason: the two
-     * selections can share rows.
+     * A group that runs EARLIER deletes from the same table, so rows this one counted may be gone for a good reason: the
+     * two selections can share rows. A deletion that runs later excuses nothing: rows missing before it ran were lost.
      */
     public function sharesRowsWithADeletion(GroupPlan $group): bool
     {
         foreach ($this->groups as $other) {
-            if ($other !== $group && $other->table() === $group->table() && $other->action === Erase::DELETE) {
+            if ($other === $group) {
+                return false;
+            }
+
+            if ($other->table() === $group->table() && $other->action === Erase::DELETE) {
                 return true;
             }
         }

@@ -199,7 +199,7 @@ Before anything can be confirmed, the preview reads your live schema and **block
 - a `matchedUsing()` (or retention) query uses a limit, an offset, `DISTINCT`, `GROUP BY`/`HAVING` or a `UNION`: rows are
   read by key in chunks, and such a clause would apply per chunk. An `ORDER BY` of the closure is simply dropped;
 - a `matchedUsing()` query reads a table this run changes and foreign keys force that table to go first. Otherwise such a
-  closure simply runs before the group it reads;
+  closure simply runs before every other group that changes a table it reads, its own table included;
 - rows hold almost the person's key (other letter case, padding): the plugin matches exactly and does not guess whose they
   are. The export is refused for the same reason. Correct the rows;
 - the linked record cannot be found, the address on the request differs from the record's, or an e-mail group has no
