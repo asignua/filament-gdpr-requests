@@ -193,7 +193,8 @@ Before anything can be confirmed, the preview reads your live schema and **block
 - another entry anonymizes or deletes rows that a `retain` entry keeps: the report would call them kept;
 - a row you delete is still referenced by rows that are not deleted with it (soft-deleted ones counted);
 - a row you delete names files through `files()` and the strategy does not remove them: use `Erase::delete(files: true)`,
-  because the row is the only thing that knows where its file is;
+  because the row is the only thing that knows where its file is. The same holds for an anonymization that changes the
+  columns a file is found by (a path set to `NULL` or a constant) without `files: true`;
 - a table that is not in this subject's map references a mapped table (add it, or `GdprRequests::acknowledge()` it). A table
   mapped only for another subject does not count;
 - a callback changes its own output: the check after the run could never tell a finished row from an unfinished one;

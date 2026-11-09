@@ -74,6 +74,9 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - An entry that anonymizes or deletes rows a `retain` entry keeps blocks the preview (retained invoices were deleted while
   the report said they were kept).
 
+- An anonymization that changes where a row names its file (the path nulled or replaced) without `files: true` blocks
+  the preview, like a deletion that leaves files behind; the file was orphaned.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

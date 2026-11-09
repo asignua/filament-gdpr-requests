@@ -299,6 +299,7 @@ return [
         'rule_not_repeatable' => ':table.:column üzerindeki geri çağırım kendi çıktısını değiştiriyor, bu yüzden biten satır bitmemiş olandan ayırt edilemez. Kural kendi sonucuna dokunmamalıdır.',
         'subject_email_shared' => 'Bu tabloda :rows kayıt bu adrese sahip, dolayısıyla satırların kime ait olduğu anlaşılamıyor. Önce kayıtları düzeltin; o zamana kadar bu adresle hiçbir şey eşleştirilmez.',
         'files_left_behind' => ':table satırları dosyaları gösteriyor, ancak silinirlerse bu dosyalar kalır ve artık hiçbir şey onları göstermez. Erase::delete(files: true) kullanın.',
+        'files_orphaned' => ':table anonimleştirmesi :files dosyanın adının geçtiği yeri değiştiriyor ama dosyaları silmiyor; artık hiçbir şey onları göstermez. Erase::anonymize(..., files: true) kullanın ya da dosya sütunlarına dokunmayın.',
         'loose_match' => ':table tablosunda :column içinde bu kişinin anahtarına neredeyse eşit :rows satır var (farklı büyük/küçük harf veya boşluk). Eklenti tam eşleşme arar ve bunların kime ait olduğunu söyleyemez. Bu satırları düzeltin.',
         'selection_unchunkable' => ':table üzerindeki özel eşleştirme :clause kullanıyor; satırları parça parça güvenle okunamaz ve bazıları geride kalabilir. Satırları basit koşullarla bulun.',
         'retain_overlap' => '":kept" tarafından yasal gerekçeyle saklanan :table tablosundaki :rows satır bu kayıt tarafından da değiştirilir veya silinirdi; oysa rapor bunların saklandığını söylüyor. İki eşleştirmeden birini daraltın.',

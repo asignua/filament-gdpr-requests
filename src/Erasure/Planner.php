@@ -32,6 +32,7 @@ final class Planner
     public function __construct(
         private readonly PersonalDataRegistry $registry,
         private readonly SubjectResolver $subjects,
+        private readonly Applier $applier,
     ) {}
 
     /**
@@ -179,6 +180,9 @@ final class Planner
         $nulled = [];
         /** @var array<string, true> $unrepeatable columns whose callback changes its own output */
         $unrepeatable = [];
+        // A row that stays but stops naming its file loses the file as surely as a deleted row does.
+        $watchFiles = $erase instanceof Anonymize && !$erase->removesFiles() && $entry->getFiles() !== null;
+        $orphans = 0;
 
         try {
             $unchunkable = $selection->unchunkable();
@@ -201,6 +205,14 @@ final class Planner
                     $plan->changing += $changes === [] ? 0 : 1;
                     $nulled += array_fill_keys(array_keys(array_filter($changes, static fn (mixed $value): bool => $value === null)), true);
                     $unrepeatable += array_fill_keys(RowRules::unrepeatable($erase, $table, $key, $row, $changes), true);
+
+                    if ($watchFiles && $changes !== []) {
+                        $after = array_map(static fn (array $file): string => $file['disk']."\0".$file['path'], $this->applier->filesOf($selection, array_replace($row, $changes)));
+
+                        foreach ($this->applier->filesOf($selection, $row) as $file) {
+                            $orphans += in_array($file['disk']."\0".$file['path'], $after, true) ? 0 : 1;
+                        }
+                    }
                 }
 
                 if ($erase instanceof Retain) {
@@ -220,6 +232,10 @@ final class Planner
             $plan->addBlocker('rule_error', ['table' => $table, 'error' => class_basename($e)]);
 
             return $plan;
+        }
+
+        if ($orphans > 0) {
+            $plan->addBlocker('files_orphaned', ['table' => $table, 'files' => $orphans]);
         }
 
         $loose = $selection->looseRows();
