@@ -38,6 +38,44 @@ final class Files
     }
 
     /**
+     * The spellings a row may use for this file, for an indexed lookup: the normalised path with a leading `/`, `./` or
+     * backslashes, on this disk and on every configured disk over the same storage (the path inside a scoped disk drops
+     * its prefix). A rarer spelling (`a//b`, `x/../a`) is not among them; PHP compares whatever the lookup finds.
+     *
+     * @return list<string>
+     */
+    public static function spellings(string $disk, string $path): array
+    {
+        [$storage, $full] = self::resolve($disk, $path, 0);
+        $full = self::normalize($full);
+        $inside = [self::normalize($path), $full];
+        $disks = config('filesystems.disks');
+
+        foreach (is_array($disks) ? array_keys($disks) : [] as $name) {
+            [$other, $prefix] = self::resolve((string) $name, '', 0);
+            $prefix = self::normalize($prefix);
+
+            if ($other !== $storage) {
+                continue;
+            }
+
+            if ($prefix === '') {
+                $inside[] = $full;
+            } elseif (str_starts_with($full, $prefix.'/')) {
+                $inside[] = substr($full, strlen($prefix) + 1);
+            }
+        }
+
+        $spellings = [$path];
+
+        foreach (array_unique($inside) as $one) {
+            array_push($spellings, $one, '/'.$one, './'.$one, str_replace('/', '\\', $one));
+        }
+
+        return array_values(array_unique($spellings));
+    }
+
+    /**
      * The path as Flysystem itself reads it. One it refuses (control characters, `..` above the root) is kept as it is:
      * the disk refuses it as well, so it cannot be the file another spelling reaches.
      */

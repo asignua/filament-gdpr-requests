@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Confirmada em :date',
         'unavailable' => 'Sem pré-visualização: a solicitação não tem registro vinculado, está encerrada ou o mapa de dados não tem entrada para ela.',
         'blocked' => 'Bloqueado: a execução não pode começar',
+        'notices' => 'Verificações lentas',
+        'notice_files_full_scan' => 'Os arquivos de :table foram comparados com cada linha de :tables, porque essas entradas não declaram colunas de arquivo. Declare-as (files(..., columns: [...])) ou uma busca para que um índice responda.',
         'groups' => 'O que vai acontecer',
         'entry' => 'Dados',
         'action' => 'Ação',

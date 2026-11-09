@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Confirmed :date',
         'unavailable' => 'No preview is available: the request has no linked record, is closed, or the data map has no entry for it.',
         'blocked' => 'Blocked: the run cannot start',
+        'notices' => 'Slow checks',
+        'notice_files_full_scan' => 'Files of :table were checked against every row of :tables, because those entries declare no file columns. Declare them (files(..., columns: [...])) or a lookup so that an index answers.',
         'groups' => 'What will happen',
         'entry' => 'Data',
         'action' => 'Action',

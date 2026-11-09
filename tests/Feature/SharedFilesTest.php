@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentGdprRequests\Tests\Feature;
 
+use Asignua\FilamentGdprRequests\DataMap\Erase;
+use Asignua\FilamentGdprRequests\DataMap\PersonalData;
 use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Erasure\Blocker;
 use Asignua\FilamentGdprRequests\Services\ErasureService;
@@ -13,6 +15,7 @@ use Asignua\FilamentGdprRequests\Tests\Support\Shop;
 use Asignua\FilamentGdprRequests\Tests\TestCase;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Workbench\App\Models\Customer;
 use Workbench\App\Models\Document;
 
 /**
@@ -55,22 +58,31 @@ class SharedFilesTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string, bool}>
      */
     public static function otherSpellings(): array
     {
         return [
-            'leading slash' => ['local', '/docs/Ada.txt'],
-            'dot segment and double slash' => ['local', './docs//Ada.txt'],
-            'backslashes' => ['local', 'docs\\Ada.txt'],
-            'a scoped disk over the same storage' => ['local-docs', 'Ada.txt'],
-            'another disk name over the same root' => ['local-again', 'docs/Ada.txt'],
+            'leading slash' => ['local', '/docs/Ada.txt', false],
+            'dot segment and double slash, read whole' => ['local', './docs//Ada.txt', true],
+            'backslashes' => ['local', 'docs\\Ada.txt', false],
+            'leading slash, read whole' => ['local', '/docs/Ada.txt', true],
+            'a scoped disk over the same storage' => ['local-docs', 'Ada.txt', false],
+            'another disk name over the same root' => ['local-again', 'docs/Ada.txt', false],
         ];
     }
 
     #[DataProvider('otherSpellings')]
-    public function test_a_file_another_row_names_in_another_spelling_is_still_shared(string $disk, string $path): void
+    public function test_a_file_another_row_names_in_another_spelling_is_still_shared(string $disk, string $path, bool $readWhole): void
     {
+        if ($readWhole) {
+            // Without declared file columns every row is read, and any spelling Flysystem accepts is the same file.
+            $this->registry()->forget(Document::class);
+            PersonalData::for(Document::class)->label('Documents')->of(Customer::class)->matchedBy('customer_id')
+                ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]])
+                ->erase(Erase::delete(files: true));
+        }
+
         config([
             'filesystems.disks.local-docs' => ['driver' => 'scoped', 'disk' => 'local', 'prefix' => 'docs'],
             'filesystems.disks.local-again' => ['driver' => 'local', 'root' => rtrim((string) config('filesystems.disks.local.root'), '/').'/'],
@@ -106,5 +118,60 @@ class SharedFilesTest extends TestCase
         $this->assertNotSame(Files::identity('local', 'docs/Ada.txt'), Files::identity('local', 'docs/ada.txt'));
         $this->assertNotSame(Files::identity('local', 'docs/Ada.txt'), Files::identity('s3-unknown', 'docs/Ada.txt'));
         $this->assertSame(Files::identity('local', 'docs/Ada.txt'), Files::identity('local', 'docs/sub/../Ada.txt'));
+    }
+
+    public function test_declared_file_columns_are_asked_through_an_index_and_the_others_are_read_whole_with_a_notice(): void
+    {
+        $ada = Shop::customer('Ada', 'ada@customer.example');
+        Shop::customer('Bob', 'bob@customer.example');
+        $queries = [];
+        \Illuminate\Support\Facades\DB::listen(static function ($query) use (&$queries): void {
+            $queries[] = $query->sql;
+        });
+
+        $plan = app(ErasureService::class)->plan($this->erasureOf($ada));
+
+        $this->assertSame([], $plan->allNotices());
+        $this->assertNotEmpty(array_filter($queries, static fn (string $sql): bool => str_contains($sql, '"documents"."path" in') || str_contains($sql, '`documents`.`path` in')));
+
+        $this->registry()->forget(Document::class);
+        PersonalData::for(Document::class)->label('Documents')->of(Customer::class)->matchedBy('customer_id')
+            ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]])
+            ->erase(Erase::delete(files: true));
+
+        $notices = app(ErasureService::class)->plan($this->erasureOf($ada))->allNotices();
+
+        $this->assertCount(1, $notices);
+        $this->assertSame('files_full_scan', $notices[0]->code);
+        $this->assertSame(['table' => 'documents', 'tables' => 'documents'], $notices[0]->params);
+        $this->assertStringContainsString('documents', $notices[0]->message());
+    }
+
+    public function test_a_lookup_closure_narrows_the_rows_and_php_still_decides(): void
+    {
+        $ada = Shop::customer('Ada', 'ada@customer.example');
+        $bob = Shop::customer('Bob', 'bob@customer.example');
+        Document::query()->where('customer_id', $bob->id)->update(['path' => '/docs/Ada.txt']);
+        $asked = [];
+        $this->registry()->forget(Document::class);
+        PersonalData::for(Document::class)->label('Documents')->of(Customer::class)->matchedBy('customer_id')
+            ->files(
+                static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]],
+                lookup: static function ($query, array $paths) use (&$asked): void {
+                    $asked = $paths;
+                    $query->where(static function ($where) use ($paths): void {
+                        foreach ($paths as $path) {
+                            $where->orWhere('path', 'like', '%'.basename($path));
+                        }
+                    });
+                },
+            )
+            ->erase(Erase::delete(files: true));
+
+        $plan = app(ErasureService::class)->plan($this->erasureOf($ada));
+
+        $this->assertSame(['docs/Ada.txt'], $asked);
+        $this->assertContains('file_shared', array_map(static fn (Blocker $blocker): string => $blocker->code, $plan->allBlockers()));
+        $this->assertSame([], $plan->allNotices());
     }
 }

@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Bevestigd :date',
         'unavailable' => 'Geen voorbeeld beschikbaar: het verzoek heeft geen gekoppeld record, is gesloten of de gegevenskaart heeft er geen item voor.',
         'blocked' => 'Geblokkeerd: de uitvoering kan niet starten',
+        'notices' => 'Trage controles',
+        'notice_files_full_scan' => 'De bestanden van :table zijn vergeleken met elke rij van :tables, omdat die items geen bestandskolommen opgeven. Geef ze op (files(..., columns: [...])) of een zoekfunctie, zodat een index antwoordt.',
         'groups' => 'Wat er gaat gebeuren',
         'entry' => 'Gegevens',
         'action' => 'Actie',

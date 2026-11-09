@@ -57,6 +57,17 @@
                 </x-filament::section>
             @endif
 
+            @if ($plan->allNotices() !== [])
+                <x-filament::section icon="heroicon-o-clock" icon-color="warning">
+                    <x-slot name="heading">{{ Lang::t('plan.notices') }}</x-slot>
+                    <ul class="list-disc space-y-1 ps-5 text-sm">
+                        @foreach ($plan->allNotices() as $notice)
+                            <li>{{ $notice->message() }}</li>
+                        @endforeach
+                    </ul>
+                </x-filament::section>
+            @endif
+
             <x-filament::section>
                 <x-slot name="heading">{{ Lang::t('plan.groups') }}</x-slot>
                 @include('filament-gdpr-requests::pages.partials.plan-table', ['groups' => $plan->groups, 'steps' => $steps])

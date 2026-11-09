@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Confirmada :date',
         'unavailable' => 'No hay vista previa: la solicitud no tiene registro vinculado, está cerrada o el mapa de datos no tiene entrada para ella.',
         'blocked' => 'Bloqueado: la ejecución no puede empezar',
+        'notices' => 'Comprobaciones lentas',
+        'notice_files_full_scan' => 'Los archivos de :table se compararon con cada fila de :tables, porque esas entradas no declaran columnas de archivo. Declárelas (files(..., columns: [...])) o una búsqueda para que responda un índice.',
         'groups' => 'Qué ocurrirá',
         'entry' => 'Datos',
         'action' => 'Acción',

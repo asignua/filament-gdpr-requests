@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Onaylandı :date',
         'unavailable' => 'Önizleme yok: talebin bağlı kaydı yok, kapalı veya veri haritasında bunun için giriş yok.',
         'blocked' => 'Engellendi: çalıştırma başlayamaz',
+        'notices' => 'Yavaş denetimler',
+        'notice_files_full_scan' => ':table dosyaları :tables tablolarının her satırıyla karşılaştırıldı, çünkü bu girdiler dosya sütunu bildirmiyor. Bir dizinin yanıt vermesi için bunları (files(..., columns: [...])) ya da bir arama bildirin.',
         'groups' => 'Ne olacak',
         'entry' => 'Veri',
         'action' => 'İşlem',

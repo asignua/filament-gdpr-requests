@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Potwierdzono :date',
         'unavailable' => 'Podgląd niedostępny: wniosek nie ma powiązanego rekordu, jest zamknięty albo mapa danych nie ma dla niego wpisu.',
         'blocked' => 'Zablokowane: nie można uruchomić',
+        'notices' => 'Wolne sprawdzenia',
+        'notice_files_full_scan' => 'Pliki :table sprawdzono z każdym wierszem :tables, bo te wpisy nie deklarują kolumn plików. Zadeklaruj je (files(..., columns: [...])) lub wyszukiwanie, aby odpowiadał indeks.',
         'groups' => 'Co się stanie',
         'entry' => 'Dane',
         'action' => 'Działanie',

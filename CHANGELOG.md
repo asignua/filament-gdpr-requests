@@ -95,6 +95,13 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   queue worker it booted inside the closure, registered the scope while scopes were off, and an access export held one
   of two order items. The query is built again once such a model is booted, so a warm and a fresh process find the same
   rows.
+- **Large tables.** `files()` takes `columns:` (the indexed columns a path is stored in) or `lookup:` (a closure that
+  narrows the query to rows that may name the paths), and the shared-file check asks the index instead of reading every
+  row of the map. An entry with neither is still read whole, and the preview lists it under **Slow checks**. The erasure
+  page builds its plan once per request (the view and the confirm button each built one per render), and a group job
+  checks only its own group's files. With a million other rows in `documents` (MariaDB 11.4 / PostgreSQL 16): preview
+  28.5 / 28.2 s → 0.20 / 0.17 s, confirm 99.3 / 97.8 s → 0.12 / 0.21 s, run 85.5 / 84.1 s (30 431 queries) → 0.09 / 0.33 s
+  (381). `tests/Benchmark/LargeTableBenchmark.php` (`GDPR_BENCH=1`) prints these.
 
 ### Changed
 

@@ -74,7 +74,7 @@ class WorkbenchServiceProvider extends ServiceProvider
             ->of(Customer::class)
             ->matchedBy('customer_id')
             ->export(['id', 'title', 'created_at'])
-            ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]])
+            ->files(static fn (Document $document): array => [['disk' => $document->disk, 'path' => $document->path]], columns: ['path'])
             ->erase(Erase::delete(files: true));
 
         PersonalData::for(Invoice::class)

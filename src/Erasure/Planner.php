@@ -19,6 +19,7 @@ use Asignua\FilamentGdprRequests\Support\Files;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Asignua\FilamentGdprRequests\Support\Schema;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -30,6 +31,9 @@ use Throwable;
  */
 final class Planner
 {
+    /** Paths asked for in one indexed lookup. */
+    private const int LOOKUP_CHUNK = 500;
+
     public function __construct(
         private readonly PersonalDataRegistry $registry,
         private readonly SubjectResolver $subjects,
@@ -84,7 +88,7 @@ final class Planner
         }
 
         $this->checkRetainOverlap($groups);
-        $this->checkSharedFiles($groups);
+        $this->checkSharedFiles($groups, $only);
         $readers = $this->closureReaders($groups);
         $groups = $this->order($groups, $schema, $readers);
         $this->checkClosureOrder($groups, $readers);
@@ -158,6 +162,12 @@ final class Planner
         }
 
         foreach (array_filter([$entry->getMatchColumn(), $entry->getEmailColumn()]) as $column) {
+            if (!isset($columns[$column])) {
+                $plan->addBlocker('column_missing', ['table' => $table, 'column' => $column]);
+            }
+        }
+
+        foreach ($entry->getFileColumns() as $column) {
             if (!isset($columns[$column])) {
                 $plan->addBlocker('column_missing', ['table' => $table, 'column' => $column]);
             }
@@ -495,16 +505,21 @@ final class Planner
     /**
      * A file is removed only when every row that names it goes with it. Rows of the whole map are asked (through each
      * entry's files() resolver), not only this person's: a path two records share must not lose the other record's file.
+     * An entry that declares the columns its files are found by (or a lookup) is asked through the index for the rows
+     * that may name these paths, and PHP decides on those; one that declares neither is read whole, and the plan says so.
      * The blocker names tables, never whose row it is.
      *
      * @param list<GroupPlan> $groups
+     * @param string|null     $only   a group job: only this group's files are checked, the others have their own job
      */
-    private function checkSharedFiles(array $groups): void
+    private function checkSharedFiles(array $groups, ?string $only = null): void
     {
         /** @var array<string, true> $removed rows whose files this run removes, as "table\0key" */
         $removed = [];
-        /** @var array<string, array<string, true>> $files group => files it removes, as "disk\0path" */
+        /** @var array<string, array<string, true>> $files group => files it removes, by identity */
         $files = [];
+        /** @var array<string, array{disk: string, path: string}> $named identity => one spelling of it */
+        $named = [];
 
         foreach ($groups as $group) {
             $erase = $group->entry->getErase();
@@ -514,13 +529,20 @@ final class Planner
             }
 
             $key = $group->selection->keyName();
+            $checked = $only === null || $only === $group->key();
 
             try {
                 foreach ($group->selection->rows() as $row) {
                     $removed[$group->table()."\0".$row[$key]] = true;
 
+                    if (!$checked) {
+                        continue;
+                    }
+
                     foreach ($this->applier->filesOf($group->selection, $row) as $file) {
-                        $files[$group->key()][Files::identity($file['disk'], $file['path'])] = true;
+                        $id = Files::identity($file['disk'], $file['path']);
+                        $files[$group->key()][$id] = true;
+                        $named[$id] = $file;
                     }
                 }
             } catch (Throwable) {
@@ -532,45 +554,60 @@ final class Planner
             return;
         }
 
-        $wanted = array_merge(...array_values($files));
         /** @var array<string, array<string, true>> $namedBy file => tables of rows that stay and still name it */
         $namedBy = [];
+        /** @var array<string, true> $scanned tables read whole for want of declared file columns */
+        $scanned = [];
 
         foreach ($this->registry->all() as $entry) {
             if ($entry->getFiles() === null) {
                 continue;
             }
 
-            $selection = Selection::constrained($entry, static function (): void {});
-            $table = $selection->table();
-            $key = $selection->keyName();
+            $selections = $this->fileCandidates($entry, array_values($named));
+            $table = (new ($entry->model))->getTable();
+
+            if ($selections === null) {
+                $scanned[$table] = true;
+                $selections = [Selection::constrained($entry, static function (): void {})];
+            }
 
             try {
-                foreach ($selection->rows() as $row) {
-                    if (isset($removed[$table."\0".$row[$key]])) {
-                        continue;
-                    }
+                foreach ($selections as $selection) {
+                    $key = $selection->keyName();
 
-                    foreach ($this->applier->filesOf($selection, $row) as $file) {
-                        $id = Files::identity($file['disk'], $file['path']);
+                    foreach ($selection->rows() as $row) {
+                        if (isset($removed[$table."\0".$row[$key]])) {
+                            continue;
+                        }
 
-                        if (isset($wanted[$id])) {
-                            $namedBy[$id][$table] = true;
+                        foreach ($this->applier->filesOf($selection, $row) as $file) {
+                            $id = Files::identity($file['disk'], $file['path']);
+
+                            if (isset($named[$id])) {
+                                $namedBy[$id][$table] = true;
+                            }
                         }
                     }
                 }
             } catch (Throwable) {
                 // A table that cannot be read cannot vouch that none of its rows names the file.
-                foreach (array_keys($wanted) as $id) {
+                foreach (array_keys($named) as $id) {
                     $namedBy[$id][$table] = true;
                 }
             }
         }
 
+        ksort($scanned);
+
         foreach ($groups as $group) {
+            if (!isset($files[$group->key()])) {
+                continue;
+            }
+
             $tables = [];
 
-            foreach (array_keys($files[$group->key()] ?? []) as $id) {
+            foreach (array_keys($files[$group->key()]) as $id) {
                 $tables += $namedBy[$id] ?? [];
             }
 
@@ -578,7 +615,56 @@ final class Planner
                 ksort($tables);
                 $group->addBlocker('file_shared', ['table' => $group->table(), 'others' => implode(', ', array_keys($tables))]);
             }
+
+            if ($scanned !== []) {
+                $group->addNotice('files_full_scan', ['table' => $group->table(), 'tables' => implode(', ', array_keys($scanned))]);
+            }
         }
+    }
+
+    /**
+     * The rows of an entry that may name one of these files, found through its declared file columns (every usual
+     * spelling of the path, on every disk over the same storage) or its own lookup; null when it declares neither.
+     *
+     * @param list<array{disk: string, path: string}> $files
+     *
+     * @return list<Selection>|null
+     */
+    private function fileCandidates(PersonalData $entry, array $files): ?array
+    {
+        $columns = $entry->getFileColumns();
+        $lookup = $entry->getFileLookup();
+
+        if ($columns === [] && $lookup === null) {
+            return null;
+        }
+
+        $table = (new ($entry->model))->getTable();
+        $selections = [];
+
+        if ($columns !== []) {
+            $spellings = array_values(array_unique(array_merge(...array_map(static fn (array $file): array => Files::spellings($file['disk'], $file['path']), $files))));
+
+            foreach (array_chunk($spellings, self::LOOKUP_CHUNK) as $chunk) {
+                $selections[] = Selection::constrained($entry, static function (EloquentBuilder $query) use ($columns, $chunk, $table): void {
+                    $query->where(static function (EloquentBuilder $where) use ($columns, $chunk, $table): void {
+                        foreach ($columns as $column) {
+                            $where->orWhereIn($table.'.'.$column, $chunk);
+                        }
+                    });
+                });
+            }
+        }
+
+        if ($lookup !== null) {
+            $paths = array_values(array_unique(array_map(static fn (array $file): string => Files::normalize($file['path']), $files)));
+
+            foreach (array_chunk($paths, self::LOOKUP_CHUNK) as $chunk) {
+                $selections[] = Selection::constrained($entry, static fn (EloquentBuilder $query) => $lookup($query, $chunk));
+            }
+        }
+
+        return $selections;
     }
 
     /**

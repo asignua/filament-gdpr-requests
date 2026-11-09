@@ -32,6 +32,11 @@ class ErasurePlanPage extends Page
 
     protected string $view = 'filament-gdpr-requests::pages.erasure-plan';
 
+    /** The plan of this Livewire request: the view and the actions ask for it several times. Never sent to the browser. */
+    private ?ErasurePlan $plan = null;
+
+    private bool $planned = false;
+
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
@@ -61,9 +66,20 @@ class ErasurePlanPage extends Page
     }
 
     /**
-     * The preview is recomputed on every render (it is read-only), so it is never stale.
+     * The preview is computed once per request (it is read-only), so it is never stale and never computed twice for one
+     * render. An action that changes the request forgets it.
      */
     public function getPlan(): ?ErasurePlan
+    {
+        if (!$this->planned) {
+            $this->plan = $this->computePlan();
+            $this->planned = true;
+        }
+
+        return $this->plan;
+    }
+
+    private function computePlan(): ?ErasurePlan
     {
         $this->gdprRequest()->refresh();
 
@@ -80,6 +96,12 @@ class ErasurePlanPage extends Page
 
             return null;
         }
+    }
+
+    private function forgetPlan(): void
+    {
+        $this->plan = null;
+        $this->planned = false;
     }
 
     protected function getHeaderActions(): array
@@ -102,8 +124,18 @@ class ErasurePlanPage extends Page
             ->modalSubmitActionLabel(Lang::t('plan.confirm_submit'))
             ->schema(fn (): array => [$this->typedReference()])
             ->action(function (): void {
-                $this->attempt(fn () => app(ErasureService::class)->confirm($this->gdprRequest(), Actor::require()), 'notifications.confirmed');
+                $this->forgetPlan();
+                $confirmed = null;
+                $this->attempt(function () use (&$confirmed): void {
+                    $confirmed = app(ErasureService::class)->confirm($this->gdprRequest(), Actor::require());
+                }, 'notifications.confirmed');
                 $this->gdprRequest()->refresh();
+
+                // The plan the confirmation was made on is the preview of this moment: no second scan for the render.
+                if ($confirmed instanceof ErasurePlan && $this->gdprRequest()->status->isOpen()) {
+                    $this->plan = $confirmed;
+                    $this->planned = true;
+                }
             });
     }
 
@@ -119,6 +151,7 @@ class ErasurePlanPage extends Page
             ->action(function (): void {
                 $this->attempt(fn () => app(ErasureService::class)->start($this->gdprRequest(), Actor::require()), 'notifications.started');
                 $this->gdprRequest()->refresh();
+                $this->forgetPlan();
             });
     }
 

@@ -16,6 +16,9 @@ final class GroupPlan
     /** @var list<Blocker> */
     public array $blockers = [];
 
+    /** @var list<Notice> */
+    public array $notices = [];
+
     public int $matched = 0;
 
     public int $trashed = 0;
@@ -79,6 +82,14 @@ final class GroupPlan
     public function addBlocker(string $code, array $params = []): void
     {
         $this->blockers[] = new Blocker($code, $params, $this->key());
+    }
+
+    /**
+     * @param array<string, scalar> $params
+     */
+    public function addNotice(string $code, array $params = []): void
+    {
+        $this->notices[] = new Notice($code, $params, $this->key());
     }
 
     public function isBlocked(): bool

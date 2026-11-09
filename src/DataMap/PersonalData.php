@@ -63,6 +63,11 @@ final class PersonalData
 
     private ?Closure $files = null;
 
+    /** @var list<string> */
+    private array $fileColumns = [];
+
+    private ?Closure $fileLookup = null;
+
     private ?Erase $erase = null;
 
     private ?Retention $retention = null;
@@ -191,11 +196,20 @@ final class PersonalData
      * Files that belong to a row (media, uploads): fn (Model $row): iterable of ['disk' => ..., 'path' => ...].
      * They go into the export archive and, when the erase strategy says `files: true`, are removed on erasure.
      *
+     * Before a file is removed, every row of the map that may name it is asked. Name the columns the path is stored in
+     * (`columns: ['path']`, indexed) or a lookup (`lookup: fn (Builder $query, array $paths) => ...`, which narrows the
+     * query to rows that may name one of these normalised paths), and an index answers; without either, every row of
+     * the table is read, and the preview says so. PHP compares the files of the rows found, whichever way they were found.
+     *
      * @param Closure(Model): iterable<array{disk: string, path: string}> $callback
+     * @param list<string>                                                $columns
+     * @param (Closure(Builder<Model>, list<string>): mixed)|null         $lookup
      */
-    public function files(Closure $callback): self
+    public function files(Closure $callback, array $columns = [], ?Closure $lookup = null): self
     {
         $this->files = $callback;
+        $this->fileColumns = $columns;
+        $this->fileLookup = $lookup;
 
         return $this;
     }
@@ -271,6 +285,19 @@ final class PersonalData
     public function getFiles(): ?Closure
     {
         return $this->files;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getFileColumns(): array
+    {
+        return $this->fileColumns;
+    }
+
+    public function getFileLookup(): ?Closure
+    {
+        return $this->fileLookup;
     }
 
     public function getErase(): ?Erase

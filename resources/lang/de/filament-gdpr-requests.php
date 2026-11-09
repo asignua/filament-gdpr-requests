@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Bestätigt :date',
         'unavailable' => 'Keine Vorschau verfügbar: Die Anfrage hat keinen verknüpften Datensatz, ist geschlossen oder die Datenkarte hat keinen Eintrag dafür.',
         'blocked' => 'Blockiert: Der Lauf kann nicht starten',
+        'notices' => 'Langsame Prüfungen',
+        'notice_files_full_scan' => 'Die Dateien von :table wurden mit jeder Zeile von :tables abgeglichen, weil diese Einträge keine Dateispalten angeben. Geben Sie sie an (files(..., columns: [...])) oder eine Suche, damit ein Index antwortet.',
         'groups' => 'Was passieren wird',
         'entry' => 'Daten',
         'action' => 'Aktion',

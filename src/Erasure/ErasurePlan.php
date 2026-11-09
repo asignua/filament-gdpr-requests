@@ -39,6 +39,20 @@ final class ErasurePlan
         return $all;
     }
 
+    /**
+     * @return list<Notice>
+     */
+    public function allNotices(): array
+    {
+        $all = [];
+
+        foreach ($this->groups as $group) {
+            array_push($all, ...$group->notices);
+        }
+
+        return $all;
+    }
+
     public function isBlocked(): bool
     {
         return $this->allBlockers() !== [];

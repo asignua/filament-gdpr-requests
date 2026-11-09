@@ -116,7 +116,9 @@ PersonalData::for(Media::class, 'customer-media')
     ->matchedUsing(fn ($query, $subject) => $query->where('model_type', (new Customer)->getMorphClass())->where('model_id', $subject->keyValue()))
     ->export(['id', 'file_name', 'created_at'])
     ->files(fn (Media $media) => collect(['', ...array_keys(array_filter($media->generated_conversions ?? []))])
-        ->map(fn (string $conversion) => ['disk' => $media->disk, 'path' => $media->getPathRelativeToRoot($conversion)]))
+        ->map(fn (string $conversion) => ['disk' => $media->disk, 'path' => $media->getPathRelativeToRoot($conversion)]),
+        // the path is not a column here: narrow to rows that may name one of the paths, PHP compares the rest
+        lookup: fn ($query, array $paths) => $query->whereIn('file_name', array_map('basename', $paths)))
     ->erase(Erase::delete(files: true));
 
 // Rows that belong to the subject.
@@ -140,7 +142,7 @@ PersonalData::for(Invoice::class)
 PersonalData::for(Document::class)                           // rows reached through another table
     ->of(Customer::class)
     ->matchedUsing(fn ($query, $subject) => $query->whereIn('order_id', Order::query()->withoutGlobalScopes()->where('customer_id', $subject->keyValue())->select('id')))
-    ->files(fn (Document $d) => [['disk' => $d->disk, 'path' => $d->path]])
+    ->files(fn (Document $d) => [['disk' => $d->disk, 'path' => $d->path]], columns: ['path']) // indexed column(s) the path is in
     ->erase(Erase::delete(files: true));
 
 // A table that references a mapped table but holds nothing about the person:
@@ -201,7 +203,11 @@ Before anything can be confirmed, the preview reads your live schema and **block
 - a file this run would remove is still named by a row that stays, of any entry with `files()` in the whole map (two
   records sharing one path): the message names the tables, not the people. Paths are compared as Flysystem reads them
   (`/docs/a.txt`, `./docs//a.txt` and `docs/a.txt` are one file) and disks by the storage they point at (a `scoped` disk
-  is its parent plus the prefix). Every row of those tables is read for this, so keep `files()` resolvers cheap;
+  is its parent plus the prefix). Declare where the path is stored, `files(..., columns: ['path'])` on an indexed column
+  or `files(..., lookup: fn ($query, array $paths) => ...)`, and the rows that may name a file are found through the
+  index (the normalised path with a leading `/`, `./` or backslashes, on every disk over the same storage; PHP compares
+  the files of what it finds). Without either, every row of the table is read: a million rows took 28 seconds per
+  preview against 0.2 with `columns`, and the preview lists such tables under **Slow checks**;
 - another entry anonymizes or deletes rows that a `retain` entry keeps: the report would call them kept;
 - a row you delete is still referenced by rows that are not deleted with it (soft-deleted ones counted);
 - a row you delete names files through `files()` and the strategy does not remove them: use `Erase::delete(files: true)`,
@@ -357,7 +363,8 @@ The suite runs on SQLite. `tests/Database` holds scenarios that need a real serv
 middle of a run, two processes on one request); they run when `GDPR_TEST_DB=mariadb|pgsql` points at a database
 (`GDPR_TEST_DB_HOST`, `_PORT`, `_NAME`, `_USER`, `_PASSWORD`) and are skipped otherwise. `GDPR_TEST_FOREIGN_DB` names a
 neighbouring database (a schema on Postgres) with the tables `customers` (one row, `marker = 'sentinel'`), `foreign_only`
-and `foreign_child`, and adds the proof that the schema reader stays inside its own database.
+and `foreign_child`, and adds the proof that the schema reader stays inside its own database. `tests/Benchmark/LargeTableBenchmark.php` (not part of the default
+run; `GDPR_BENCH=1`, `GDPR_BENCH_ROWS`) times the preview, the confirmation and the run against a million rows.
 
 ## AI agents
 

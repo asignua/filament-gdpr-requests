@@ -74,8 +74,9 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('customers');
             $table->string('title');
             $table->string('disk')->default('local');
-            $table->string('path');
+            $table->string('path')->index(); // the shared-file check looks paths up by this index
             $table->timestamps();
+            $table->index('customer_id'); // Postgres does not index a foreign key by itself
         });
 
         Schema::create('invoices', function (Blueprint $table): void {

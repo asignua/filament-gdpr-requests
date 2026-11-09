@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Confirmé le :date',
         'unavailable' => 'Aucun aperçu : la demande n\'a pas d\'enregistrement lié, est clôturée, ou la carte des données n\'a pas d\'entrée pour elle.',
         'blocked' => 'Bloqué : l\'exécution ne peut pas démarrer',
+        'notices' => 'Vérifications lentes',
+        'notice_files_full_scan' => 'Les fichiers de :table ont été comparés à chaque ligne de :tables, car ces entrées ne déclarent pas de colonnes de fichier. Déclarez-les (files(..., columns: [...])) ou une recherche pour qu\'un index réponde.',
         'groups' => 'Ce qui va se passer',
         'entry' => 'Données',
         'action' => 'Action',

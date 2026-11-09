@@ -142,6 +142,8 @@ return [
         'confirmed_at' => 'Confermata il :date',
         'unavailable' => 'Nessuna anteprima: la richiesta non ha un record collegato, è chiusa o la mappa dei dati non ha una voce per essa.',
         'blocked' => 'Bloccato: l\'esecuzione non può partire',
+        'notices' => 'Controlli lenti',
+        'notice_files_full_scan' => 'I file di :table sono stati confrontati con ogni riga di :tables, perché quelle voci non dichiarano colonne di file. Dichiarale (files(..., columns: [...])) o una ricerca, così risponde un indice.',
         'groups' => 'Cosa accadrà',
         'entry' => 'Dati',
         'action' => 'Azione',
