@@ -103,7 +103,7 @@ class ViewGdprRequest extends ViewRecord
 
     private function emailDiffers(): bool
     {
-        if (!$this->mayManage() || !in_array($this->record->status, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::ErasureConfirmed], true)) {
+        if (!$this->mayManage() || !in_array($this->record->status, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::ErasureConfirmed, RequestStatus::Partial], true)) {
             return false;
         }
 

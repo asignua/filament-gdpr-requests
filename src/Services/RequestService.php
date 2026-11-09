@@ -104,6 +104,10 @@ final class RequestService
     /**
      * Settles a difference between the address on the request and the linked record in favour of the record. It is
      * a decision about who the request is about, so the identity must be checked again.
+     *
+     * Also the way out of a partial erasure whose record changed its address before the record itself was erased: rows
+     * are always matched on the record's address, so taking it over changes no match, only the claim. The request stays
+     * partial and needs a new identity check and a new confirmation (four eyes again) before it goes forward.
      */
     public function acceptRecordEmail(GdprRequest $request, Authenticatable $actor): GdprRequest
     {
@@ -118,13 +122,32 @@ final class RequestService
             throw GdprException::translated('record_email_unavailable');
         }
 
+        // Once data changed, this is only a way out of a real difference, not a reset of the checks.
+        if ($this->erasureStarted($current) && Pseudonym::normalizeEmail($current->subject_email) === $email) {
+            throw InvalidTransition::translated('erasure_started_locked');
+        }
+
         $this->removeArchives($request);
 
         DB::transaction(function () use ($request, $email, $actor): void {
             $locked = $this->locked($request);
             $this->assertRewritable($locked);
             $locked->forceFill(['subject_email' => $email] + $this->emailPseudonymFields($email));
-            $this->resetChecks($locked);
+
+            if ($this->erasureStarted($locked)) {
+                // Forward only: the plan of the run stays, the person and the decision are checked again.
+                $locked->forceFill([
+                    'identity_verified_at' => null,
+                    'identity_verified_by' => null,
+                    'identity_note' => null,
+                    'erasure_confirmed_at' => null,
+                    'erasure_confirmed_by' => null,
+                    'status' => RequestStatus::Partial,
+                ])->save();
+            } else {
+                $this->resetChecks($locked);
+            }
+
             RequestLog::record($locked, 'record_email_accepted', $actor);
         });
 
@@ -447,13 +470,22 @@ final class RequestService
         }
     }
 
+    /**
+     * The address may be taken from the record until the erasure has changed the record itself: from then on the record
+     * holds an anonymized address, and the one taken at confirmation is the one in force.
+     */
     private function assertRewritable(GdprRequest $request): void
     {
         $this->assertOpen($request);
 
-        if ($request->status === RequestStatus::Partial || $request->steps()->exists()) {
+        if ($this->erasureStarted($request) && $this->subjects->rootChanged($request)) {
             throw InvalidTransition::translated('erasure_started_locked');
         }
+    }
+
+    private function erasureStarted(GdprRequest $request): bool
+    {
+        return $request->status === RequestStatus::Partial || $request->steps()->exists();
     }
 
     private function resetChecks(GdprRequest $request): void

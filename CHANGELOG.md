@@ -87,6 +87,10 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - The report after a run shows the legal basis and the kept-until date of retained groups (it showed them only in the
   live preview).
 
+- A partial erasure whose record changed its address had no way forward (the mismatch blocked, and the address could
+  not be taken over). **Accept the record's e-mail** now works there until the record itself is erased: the request stays
+  partial, and needs a new identity check and a new confirmation.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

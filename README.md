@@ -210,7 +210,9 @@ Before anything can be confirmed, the preview reads your live schema and **block
 - the linked record cannot be found, the address on the request differs from the record's, or an e-mail group has no
   address to match on, or several records share that address (soft-deleted ones too), since it could not tell whose rows
   are whose. The export is refused for the same reasons. A person settles a difference: link the right record, or use
-  **Accept the record's e-mail** (which removes export archives and asks for the identity check again);
+  **Accept the record's e-mail** (which removes export archives and asks for the identity check again). On a partial
+  erasure whose record changed its address before the record itself was erased, the same action is the way forward: the
+  request stays partial and needs a new identity check and a new confirmation;
 - an entry has no way to find rows, a table or column does not exist, a rule throws, or the pseudonym key is missing.
 
 ## How a request goes
