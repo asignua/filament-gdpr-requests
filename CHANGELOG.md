@@ -2,140 +2,25 @@
 
 All notable changes to `asignua/filament-gdpr-requests` are documented here.
 
-## Unreleased
+## v1.0.0 - 2026-11-09
 
-- Request register with deadline (one month, one extension), reminders, action log, four gates denied by default.
-- Data map (`PersonalData`, `Erase`, `Rule`, `Retention`), explicit subject key, keyed HMAC pseudonyms (`GDPR_PSEUDONYM_KEY`).
-- Export archive on a private disk with a signed, user-bound, short-lived link.
-- Erasure with a schema-aware preview that blocks unsafe rules, typed confirmation, four eyes, one transaction per group,
-  `partial` status and an idempotent forward-only rerun. Tested on SQLite, MariaDB 11.4 and PostgreSQL 16.
-- `gdpr:retention` (dry run by default), `gdpr:prune`, `gdpr:remind`.
-- Ten languages (eight machine-translated).
-
-### Fixed before the first release
-
-- **The linked record decides who a request is about.** E-mail groups match on the root row's address. A differing
-  address, a missing root row or an unknown address block erasure and export; a person settles a difference (new action
-  **Accept the record's e-mail**). The address is kept at confirmation for groups that run after the root is anonymized.
-- Relinking is refused once an erasure changed data, and removes the previous person's archives. Steps are bound to the
-  plan fingerprint (new column `gdpr_request_steps.fingerprint`), so a step of another person never counts.
-- Keys are stored as the database stores them: `001` binds as `1`, `1abc` is refused, and a key that matches no row blocks.
-- `Rule::hash` accepts only its exact digest format. `Rule::fixed(null)`, and a callback that returns null, block on a
-  NOT NULL column.
-- A group failed by its files finishes on a successful retry. Duplicate or late jobs leave settled steps alone.
-- The completion mail goes after the commit. Killed jobs reach `partial` through `failed()`; a quiet run offers Resume
-  after `erasure.stale_run_minutes`.
-- Failed file deletes are checked and reported; `gdpr:prune` and `gdpr:retention --apply` exit with a failure.
-- The plan fingerprint is an HMAC with the pseudonym key, so it no longer gives the subject id back.
-- `refuse`, `close` and `complete` are guarded by the database against a stale model.
-- A second declaration of the same map group is refused instead of silently replacing the first one (whose rows were then
-  left out while the request read `fulfilled`). `PersonalDataRegistry::forget()` replaces an entry on purpose.
-- All archives of the person are purged before an erasure reads `fulfilled`; one that survives keeps it `partial`.
-- `gdpr:remind` marks only what reached somebody and warns about a missing `notifyAdminsUsing()`.
-- The schema reader stays inside the current database (Laravel's `getTables()` without a schema lists them all on
-  MariaDB), foreign keys across databases included. This was the cause of the intermittent real-database test errors.
-- Notes are refused after the details were wiped.
-
-- **`fulfilled` means the data was looked at again, not that the steps finished.** Finalisation re-plans for the same
-  person. A row the plan said would go, a file that should be gone, a mismatch of rows planned and handled, a changed map
-  or a blocker keep the request `partial`, with a precise list on the erasure page and in the log.
-- A first run that finds fewer rows than confirmed fails the group. Closure groups run before the tables they read; when
-  foreign keys forbid that, the preview blocks. A callback that changes its own output blocks the preview.
-- **Several records behind one address block erasure and export**, soft-deleted ones included. Ada's erasure could delete
-  Eve's ticket and Ada's export could hold it. An address that turns up on another record after the root was erased stops
-  the run too.
-- **One normal form for an address on every driver.** SQL's TRIM strips spaces only, so tab, newline, CR and no-break space
-  survived an erasure. The characters are now one list for PHP and SQL; on SQLite PHP itself answers, because its LOWER
-  knows only ASCII. The pseudonym of an address with such characters changes accordingly.
-- A table mapped only for another subject no longer passes as mapped, in the retention plan either.
-- `files()` with `Erase::delete()` blocks: the file was orphaned and the request read `fulfilled`.
-- Rows that hold almost the key (case, padding) block erasure and export instead of vanishing silently, on every driver.
-- **`partial` has a way forward.** After a new row or a fixed map, resume, confirm, refuse and relink were all refused. A
-  fresh preview and confirmation now work from `partial` and from a run that went quiet, four eyes included. Every group
-  runs again; step figures add up, the earlier result stays in the step's `detail`, files still owed stay owed, and the
-  log keeps every round. Relinking and refusing stay refused once rows are gone.
-- **A fulfilled erasure closes itself**: `closed_at` is set and the link cut at finalisation, so `gdpr:prune` can wipe the
-  name, address and notes. The status stays `fulfilled`; a second close is refused.
-- Keys past PHP's integer range are refused before any query and match nothing: they clamped to row
-  9223372036854775807 on unsigned MariaDB keys and aborted the transaction on Postgres. Keys are compared as text.
-- Rule output is compared as text, so a masked 19-digit value counts as changed. A date in a datetime column, reordered
-  json and padded `char` values count as unchanged.
-- A closure's own `ORDER BY` no longer breaks the chunked read (15 of 25 rows were left while the request read
-  `fulfilled`): the order is dropped, and a limit, offset, `DISTINCT`, `GROUP BY` or `UNION` blocks the preview. The check
-  after the run counts with a fresh, unchunked query, so it does not share a fault of the read it checks.
-- A subquery that a `matchedUsing()` closure builds through another model no longer keeps that model's soft-delete (or
-  any other global) scope: the items of a soft-deleted order were left behind. Closures run with global scopes off.
-- A closure that reads its own table now runs before another group that deletes from that table (it ran after, found
-  nothing, and two rows stayed). Fewer rows than confirmed are excused only by a deletion that ran earlier.
-- An entry that anonymizes or deletes rows a `retain` entry keeps blocks the preview (retained invoices were deleted while
-  the report said they were kept).
-- An anonymization that changes where a row names its file (the path nulled or replaced) without `files: true` blocks
-  the preview, like a deletion that leaves files behind; the file was orphaned.
-- A file that a row of another record still names is no longer removed: the preview (and every group run, and
-  `gdpr:retention`) blocks when a path to remove is named by a row that stays, listing tables only.
-- **Complete** and **Refuse** set `closed_at`, so `gdpr:prune` wipes those requests after `request_retention_days`
-  (before, only an explicit close or a finished erasure did, and the details of the others stayed for ever). Closing such
-  a request later keeps the original date; requests that ended before this change are wiped by their last update.
-- The report after a run shows the legal basis and the kept-until date of retained groups (it showed them only in the
-  live preview).
-- A partial erasure whose record changed its address had no way forward (the mismatch blocked, and the address could
-  not be taken over). **Accept the record's e-mail** now works there until the record itself is erased: the request stays
-  partial, and needs a new identity check and a new confirmation.
-- Postgres missed an address with `İ` (PHP lowercases it to two code points) or a word-final `Σ`. The query folds both
-  on MariaDB and Postgres and PHP still decides; the lookup by e-mail compares in PHP too. README says what stays with
-  the server's Unicode tables.
-- `testbench.yaml` (with its demo keys) is no longer in the package archive.
-- A database whose `LOWER` knows less than PHP's (Postgres created with `LC_CTYPE 'C'` folds ASCII only) is refused
-  with a message that shows both answers. Before, an address with a non-ASCII capital was missed by the preview and by the
-  check after the run, and the request read `fulfilled` with the rows still there.
-- The shared-file check compares files as the disk reads them. `/docs/Ada.txt` on Bob's row and `docs/Ada.txt` on Ada's
-  were two files to it, and Bob's file was deleted. Paths go through Flysystem's normaliser on both sides, and two disk
-  names over one storage (a `scoped` disk, a second name for the same root) count as one disk.
-- A model that a `matchedUsing()` closure makes for the first time no longer brings its soft-delete scope back. In a fresh
-  queue worker it booted inside the closure, registered the scope while scopes were off, and an access export held one
-  of two order items. The query is built again once such a model is booted, so a warm and a fresh process find the same
-  rows.
-- **Large tables.** `files()` takes `columns:` (the indexed columns a path is stored in) or `lookup:` (a closure that
-  narrows the query to rows that may name the paths), and the shared-file check asks the index instead of reading every
-  row of the map. An entry with neither is still read whole, and the preview lists it under **Slow checks**. The erasure
-  page builds its plan once per request (the view and the confirm button each built one per render), and a group job
-  checks only its own group's files. With a million other rows in `documents` (MariaDB 11.4 / PostgreSQL 16): preview
-  28.5 / 28.2 s → 0.20 / 0.17 s, confirm 99.3 / 97.8 s → 0.12 / 0.21 s, run 85.5 / 84.1 s (30 431 queries) → 0.09 / 0.33 s
-  (381). `tests/Benchmark/LargeTableBenchmark.php` (`GDPR_BENCH=1`) prints these.
-- The indexed shared-file check misses no spelling the full scan catches. It asked only for a few spellings of the path,
-  so Bob's row naming `docs//Ada.txt`, `docs/x/../Ada.txt` or `docs/./Ada.txt` was not found, Ada's file was deleted and
-  the request read `fulfilled`. It now adds, per declared column, the rows whose stored path is not in its normal form
-  (`LIKE`, byte by byte) and normalises them in PHP; a seeded test compares both checks over 150 generated spellings on
-  three disks. With a million canonical rows (MariaDB 11.4 / PostgreSQL 16): preview 0.15 / 0.13 s → 0.34 / 0.25 s,
-  confirm 0.11 / 0.20 s → 0.82 / 0.48 s, run 0.11 / 0.32 s → 0.62 / 0.54 s.
-- A Postgres column with its own collation is folded like the probe. The case-folding check tested only the database
-  default, so a mapped column `COLLATE "C"` passed it, its `LOWER` left non-ASCII capitals alone, the preview found 0
-  rows and the request read `fulfilled` with the data still there. The address expression now adds `COLLATE "default"`
-  after the cast. MariaDB was already consistent (`CONVERT … USING utf8mb4` drops the column collation); tests cover
-  `C`, `POSIX` and `ucs_basic` columns and five MariaDB collations.
-- The non-canonical path check reads a MariaDB column in any character set. `LIKE BINARY` compared the column's raw
-  bytes, so in a `utf16`, `ucs2` or `utf32` column it matched none of the spellings, in `sjis` none with a backslash,
-  and Ada's file was deleted while Bob's row named it. The column is now `CONVERT … USING utf8mb4` under
-  `utf8mb4_bin`; a test runs the generated spellings through 17 column types (MariaDB utf8mb4, utf8mb3, latin1, ascii,
-  gbk, big5, sjis, utf16, ucs2, utf32, varbinary; Postgres text, `C`, ICU, nondeterministic ICU, citext; SQLite).
-- A table where every stored path starts with `/` is no longer read whole by the shared-file check. Every such row is
-  non-canonical, so the pre-filter handed all of them to PHP: with a million of them preview 14.5 s, confirm 57 s (past
-  the request timeout), run 43 s. The non-canonical rows must now also hold the last segment of a file looked for
-  (LIKE-escaped, under the same expression); the normaliser never changes that segment, and the spelling matrix shows
-  no new misses. A million leading-slash rows (MariaDB 11.4 / PostgreSQL 16): preview 0.23 / 0.23 s, confirm
-  0.80 / 0.30 s, run 0.64 / 0.41 s; `LargeTableBenchmark` prints this case too.
-- A Postgres `bytea` path column no longer loses the shared-file check. Cast to text it reads as hex (`\x2f646f…`), so
-  the last-segment `LIKE` matched none of `/docs/Ada.txt`, `docs/Ada.txt/.`, `docs/Ada.txt/x/..` or `docs/./Ada.txt`,
-  and PDO handed even an exact match over as a stream (`Resource id #7` to the resolver): Ada's file was deleted while
-  Bob's row named it. A column whose text form is not its bytes (Postgres outside the string types, a domain over
-  `bytea` included; a NUL-padded MariaDB `BINARY(n)`) is now read whole, once, and streams are read as bytes before the
-  resolver sees the row. `BLOB` and `VARBINARY` keep the narrowed scan; the matrix covers them, `bytea` and a `bytea`
-  domain (21 column types).
-
-### Changed
-
-- The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.
-- Rules, stored errors and the action log read as translated text in ten languages. Errors are stored as a translation key
-  with parameters; rows written earlier are shown as they are.
-- A missing `GDPR_PSEUDONYM_KEY` says how to fix it, on the first page of the panel.
-- The README map covers `password`, `remember_token` and spatie media, and warns that anything outside the map stays.
+- A register for data-subject requests (access, erasure, rectification, restriction, portability, objection) in a
+  Filament 5 panel: deadline of one calendar month with one extension, reminders, assignee, notes and an action log.
+  Names, addresses and notes are wiped after `request_retention_days`; a keyed pseudonym stays.
+- Requires PHP 8.3+, Laravel 12 or 13, Filament 5, `ext-zip`, one database connection and `GDPR_PSEUDONYM_KEY` (HMAC key
+  for the pseudonyms and the plan fingerprint; rotation through `GDPR_PSEUDONYM_KEY_VERSION`).
+- Four gates (`gdpr.view`, `gdpr.manage`, `gdpr.export`, `gdpr.erase`), **denied until you define them**.
+- A data map in code (`PersonalData`, `Erase`, `Rule`, `Retention`) with an explicit subject key; nothing is guessed.
+- Export: a zip of JSON plus declared files on a private disk, behind a short-lived signed link bound to its user.
+- Erasure: a schema-aware preview that blocks unsafe rules (foreign keys, unique columns, shared files, retained rows,
+  several records behind one address), a typed confirmation, **four eyes**, one transaction per group, `partial` with a
+  way forward, and a re-check of the data before a request reads `fulfilled`.
+- `gdpr:retention` (dry run unless `--apply`), `gdpr:prune`, `gdpr:remind`.
+- Tested on SQLite, MariaDB 11.4 and PostgreSQL 16. Before any work the plugin probes the server's case folding and
+  refuses a database whose `LOWER` folds less than PHP's (a Postgres `LC_CTYPE 'C'`). Large tables: declared indexed
+  path columns or a lookup closure keep the shared-file check off a full read.
+- Ten languages (English and Ukrainian by the author, eight machine-translated).
+- **Not legal advice and not "GDPR compliance"**: a process tool that keeps evidence. Not covered: backups, logs outside
+  the database, search indexes and caches, external systems, tables missing from the map, online identity checks, a
+  public request form, the record of processing.
+- Panels with tenancy are not supported in v1.

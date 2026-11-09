@@ -1,10 +1,11 @@
 # Filament GDPR Requests
 
 [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/asignua/filament-gdpr-requests.svg?style=flat-square)](https://packagist.org/packages/asignua/filament-gdpr-requests)
+[![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-gdpr-requests/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/asignua/filament-gdpr-requests/actions/workflows/tests.yml)
+[![License](https://img.shields.io/packagist/l/asignua/filament-gdpr-requests.svg?style=flat-square)](https://github.com/asignua/filament-gdpr-requests/blob/main/LICENSE.md)
 
 <img class="filament-hidden" src="https://raw.githubusercontent.com/asignua/filament-gdpr-requests/v1.0.0/art/cover.jpg" alt="Filament GDPR Requests">
-
-[![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-gdpr-requests/tests.yml?branch=main&label=tests)](https://github.com/asignua/filament-gdpr-requests/actions/workflows/tests.yml)
 
 Somebody e-mails "please delete my data" or "send me a copy". This plugin gives your team a register for those requests
 and a careful way to carry them out: a deadline that is counted for you, a record of who did what, an export built from
