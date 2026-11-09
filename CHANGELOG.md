@@ -80,6 +80,10 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - A file that a row of another record still names is no longer removed: the preview (and every group run, and
   `gdpr:retention`) blocks when a path to remove is named by a row that stays, listing tables only.
 
+- **Complete** and **Refuse** set `closed_at`, so `gdpr:prune` wipes those requests after `request_retention_days`
+  (before, only an explicit close or a finished erasure did, and the details of the others stayed for ever). Closing such
+  a request later keeps the original date; requests that ended before this change are wiped by their last update.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

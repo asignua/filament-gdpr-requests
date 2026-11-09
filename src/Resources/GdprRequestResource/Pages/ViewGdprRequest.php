@@ -234,7 +234,7 @@ class ViewGdprRequest extends ViewRecord
     private function closeAction(): Action
     {
         return Action::make('close')->label(Lang::t('actions.close'))->icon('heroicon-o-lock-closed')
-            ->visible(fn (): bool => $this->mayManage() && $this->record->closed_at === null && in_array($this->record->status, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::Fulfilled, RequestStatus::Refused], true))
+            ->visible(fn (): bool => $this->mayManage() && RequestService::closable($this->record))
             ->requiresConfirmation()
             ->modalDescription(Lang::t('actions.close_help'))
             ->action(function (): void {

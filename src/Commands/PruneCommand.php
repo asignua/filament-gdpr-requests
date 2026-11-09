@@ -15,7 +15,8 @@ use Illuminate\Console\Command;
 
 /**
  * Housekeeping of the plugin's OWN records: expired export archives, and the name / address / message / notes of
- * requests closed longer than `request_retention_days` ago. The pseudonym and the structural log stay.
+ * requests that ended (fulfilled, refused or closed) longer than `request_retention_days` ago. The pseudonym and the
+ * structural log stay.
  */
 class PruneCommand extends Command
 {
@@ -45,10 +46,18 @@ class PruneCommand extends Command
             ->get();
 
         $days = max(0, (int) config('filament-gdpr-requests.request_retention_days', 90));
+        $before = now()->subDays($days);
+        // Every way a request ends sets closed_at. Requests completed or refused before it did carry their last change.
         $old = GdprRequest::query()
-            ->whereNotNull('closed_at')
             ->whereNull('details_purged_at')
-            ->where('closed_at', '<', now()->subDays($days))
+            ->where(static function ($query) use ($before): void {
+                $query->where('closed_at', '<', $before)
+                    ->orWhere(static function ($legacy) use ($before): void {
+                        $legacy->whereNull('closed_at')
+                            ->whereNotIn('status', RequestStatus::openValues())
+                            ->where('updated_at', '<', $before);
+                    });
+            })
             ->get();
 
         $failed = 0;

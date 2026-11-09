@@ -232,7 +232,8 @@ Before anything can be confirmed, the preview reads your live schema and **block
 7. **Report**: one line per entry (found, changed, soft-deleted) and the status of each group. When the check is clean,
    every export archive of that person is removed, from their other requests too; only then the request reads *Fulfilled*.
 8. **Close**: a fulfilled erasure closes itself: the link to the person's record is cut and the `request_retention_days`
-   clock starts. Every other request is closed by hand, which cuts the link and removes the archives the same way.
+   clock starts. **Complete** and **Refuse** start that clock too; close such a request by hand to cut the link and
+   remove the archives the same way (closing later does not restart the clock).
 
 ### Irreversible means irreversible
 
@@ -267,7 +268,7 @@ Schedule::command('gdpr:prune')->dailyAt('03:30');
 | Command | What it does |
 | --- | --- |
 | `gdpr:retention` | Plans the retention policies of the map. **Dry run by default**; changes rows only with `--apply`. No config key turns it on. `--only=<group or model>`. |
-| `gdpr:prune` | Removes expired export archives and wipes name, address, message and notes of requests closed longer than `request_retention_days` ago. `--dry-run` to look first. |
+| `gdpr:prune` | Removes expired export archives and wipes name, address, message and notes of requests that ended (fulfilled, refused or closed) longer than `request_retention_days` ago. `--dry-run` to look first. |
 | `gdpr:remind` | Notifies the assignee `reminders.days_before` days before the deadline and your administrators when it is passed. Define who those are with `GdprRequests::notifyAdminsUsing(fn () => User::...)`: **without it nobody but the assignee hears about an overdue request**, and the command warns you. |
 
 Every run is recorded in `gdpr_runs`, dry runs included. A file or archive that cannot be deleted is reported, and
@@ -296,7 +297,7 @@ Publish with `php artisan vendor:publish --tag=filament-gdpr-requests-config`. T
 | `four_eyes` (`GDPR_FOUR_EYES`) | `true` | The person who runs an erasure must not be the one who confirmed it. |
 | `export.disk` (`GDPR_EXPORT_DISK`) | `local` | Must be private; a disk with public visibility, or inside `public/`, is refused. |
 | `export.retention_days` | `30` | Archive lifetime. |
-| `request_retention_days` | `90` | Days after closing before name, address and notes are wiped. |
+| `request_retention_days` | `90` | Days after a request ended (fulfilled, refused or closed) before name, address and notes are wiped. |
 | `extension_max_months` | `2` | Extra months allowed by one extension. |
 | `requester_mail.enabled` | `false` | Stage e-mails to the person (received, extended, completed, refused). |
 | `erasure.stale_run_minutes` | `30` | A run with no sign of life for this long may be resumed. |

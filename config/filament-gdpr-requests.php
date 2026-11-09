@@ -32,8 +32,8 @@ return [
     ],
 
     /*
-     * Days after the request is closed when the name, address, message and notes are wiped from the request
-     * record (the pseudonym stays). Applied by `gdpr:prune`.
+     * Days after the request ended (fulfilled, refused or closed) when the name, address, message and notes are wiped
+     * from the request record (the pseudonym stays). Applied by `gdpr:prune`.
      */
     'request_retention_days' => (int) env('GDPR_REQUEST_RETENTION_DAYS', 90),
 

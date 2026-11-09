@@ -259,7 +259,8 @@ final class RequestService
             throw InvalidTransition::translated('cannot_complete');
         }
 
-        $this->transition($request, [RequestStatus::InProgress], ['status' => RequestStatus::Fulfilled->value], 'cannot_complete');
+        // A request that ended starts the clock of `request_retention_days`, like one that was closed.
+        $this->transition($request, [RequestStatus::InProgress], ['status' => RequestStatus::Fulfilled->value, 'closed_at' => now()], 'cannot_complete');
         RequestLog::record($request, 'completed', $actor);
         RequesterMail::send($request, 'completed');
 
@@ -282,6 +283,7 @@ final class RequestService
         $this->transition($request, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::ErasureConfirmed], [
             'status' => RequestStatus::Refused->value,
             'refused_at' => now(),
+            'closed_at' => now(),
             'refusal_reason' => trim($reason),
             'erasure_confirmed_at' => null,
             'erasure_confirmed_by' => null,
@@ -296,21 +298,24 @@ final class RequestService
 
     /**
      * Closes the request: the link to the subject is cut (only the pseudonym stays), the export archives are
-     * removed. The name, address and notes stay until `request_retention_days` have passed (see `gdpr:prune`).
+     * removed. The name, address and notes stay until `request_retention_days` have passed (see `gdpr:prune`), counted
+     * from the moment the request ended: closing a completed or refused request later does not restart that clock.
      */
     public function close(GdprRequest $request, Authenticatable $actor): GdprRequest
     {
         Gates::authorize(Gates::MANAGE, $actor);
 
-        // A finished erasure closed itself; a second close would restart the clock on what it still holds.
-        if ($this->current($request)->closed_at !== null) {
+        $current = $this->current($request);
+
+        // A finished erasure closed itself and cut the link: there is nothing left to close.
+        if (!self::closable($current)) {
             throw InvalidTransition::translated('cannot_close');
         }
 
-        DB::transaction(function () use ($request, $actor): void {
+        DB::transaction(function () use ($request, $actor, $current): void {
             $this->transition($request, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::Fulfilled, RequestStatus::Refused], [
                 'status' => RequestStatus::Closed->value,
-                'closed_at' => now(),
+                'closed_at' => $current->closed_at ?? now(),
                 'subject_model' => null,
                 'subject_id' => null,
                 'erasure_plan' => null,
@@ -322,6 +327,16 @@ final class RequestService
         app(ExportService::class)->removeAllFor($request);
 
         return $request;
+    }
+
+    /**
+     * Whether close() has anything left to do: a request that ended by hand still holds the link and the archives, one
+     * that an erasure finished has neither.
+     */
+    public static function closable(GdprRequest $request): bool
+    {
+        return in_array($request->status, [RequestStatus::New, RequestStatus::InProgress, RequestStatus::Fulfilled, RequestStatus::Refused], true)
+            && ($request->closed_at === null || $request->subject_model !== null);
     }
 
     /**
