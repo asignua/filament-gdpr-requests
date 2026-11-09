@@ -118,6 +118,12 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   and Ada's file was deleted while Bob's row named it. The column is now `CONVERT … USING utf8mb4` under
   `utf8mb4_bin`; a test runs the generated spellings through 17 column types (MariaDB utf8mb4, utf8mb3, latin1, ascii,
   gbk, big5, sjis, utf16, ucs2, utf32, varbinary; Postgres text, `C`, ICU, nondeterministic ICU, citext; SQLite).
+- A table where every stored path starts with `/` is no longer read whole by the shared-file check. Every such row is
+  non-canonical, so the pre-filter handed all of them to PHP: with a million of them preview 14.5 s, confirm 57 s (past
+  the request timeout), run 43 s. The non-canonical rows must now also hold the last segment of a file looked for
+  (LIKE-escaped, under the same expression); the normaliser never changes that segment, and the spelling matrix shows
+  no new misses. A million leading-slash rows (MariaDB 11.4 / PostgreSQL 16): preview 0.23 / 0.23 s, confirm
+  0.80 / 0.30 s, run 0.64 / 0.41 s; `LargeTableBenchmark` prints this case too.
 
 ### Changed
 

@@ -69,9 +69,14 @@ final class Sql
      * nondeterministic one on Postgres). On MariaDB the column is converted to utf8mb4 first: its raw bytes are not the
      * pattern's in utf16, ucs2 or utf32 (every pattern missed), nor the backslash in sjis.
      *
+     * With segments, only the rows that also hold one of them (the last segment of each file looked for, Files::
+     * lastSegment()) under the same expression: normalising keeps a path's last segment as it is, so a spelling of the
+     * file always contains it, and a table where every path starts with `/` is not read whole.
+     *
      * @param Builder<Model> $query
+     * @param list<string>   $segments
      */
-    public static function whereNonCanonicalPath(Builder $query, string $qualifiedColumn): void
+    public static function whereNonCanonicalPath(Builder $query, string $qualifiedColumn, array $segments = []): void
     {
         $column = $query->getQuery()->getGrammar()->wrap($qualifiedColumn);
         $like = match ($query->getModel()->getConnection()->getDriverName()) {
@@ -79,12 +84,27 @@ final class Sql
             'mysql', 'mariadb' => 'CONVERT('.$column.' USING utf8mb4) COLLATE utf8mb4_bin LIKE ?',
             default => $column.' LIKE ?',
         };
-
-        $query->where(static function (Builder $where) use ($like): void {
-            foreach (Files::NON_CANONICAL as $pattern) {
+        $any = static function (Builder $where, array $patterns) use ($like): void {
+            foreach ($patterns as $pattern) {
                 $where->orWhereRaw($like." ESCAPE '!'", [$pattern]); // @phpstan-ignore argument.type (the column is wrapped by the grammar)
             }
-        });
+        };
+
+        // The segment first: it rules out nearly every row, and MariaDB then skips the six patterns behind it.
+        if ($segments !== []) {
+            $query->where(static fn (Builder $where) => $any($where, array_map(static fn (string $segment): string => '%'.self::escapeLike($segment).'%', $segments)));
+        }
+
+        $query->where(static fn (Builder $where) => $any($where, Files::NON_CANONICAL));
+    }
+
+    /**
+     * The value as a literal inside a LIKE pattern with ESCAPE '!': `%` and `_` match themselves, and so does `!`. The
+     * backslash is no escape there, on any of the drivers.
+     */
+    public static function escapeLike(string $value): string
+    {
+        return str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $value);
     }
 
     /**

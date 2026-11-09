@@ -79,6 +79,19 @@ final class Files
     }
 
     /**
+     * The last segment of the path in its normal form, which every spelling of the file holds as it is (the normaliser
+     * only turns `\` into `/` and drops empty, `.` and `..` segments); an empty string when there is none to rely on (a
+     * path that normalises to the root, or one the normaliser refuses).
+     */
+    public static function lastSegment(string $path): string
+    {
+        $segments = preg_split('#[/\\\\]#', self::normalize($path), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $last = (string) end($segments);
+
+        return in_array($last, ['.', '..'], true) ? '' : $last;
+    }
+
+    /**
      * The path as Flysystem itself reads it. One it refuses (control characters, `..` above the root) is kept as it is:
      * the disk refuses it as well, so it cannot be the file another spelling reaches.
      */

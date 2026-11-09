@@ -656,10 +656,17 @@ final class Planner
                 });
             }
 
-            // Plus every row whose path is not in its normal form (`docs//a`, `x/../a`, `/a`): no list of spellings
-            // covers those, so they are read and PHP normalises them. One query per column.
+            // Plus every row whose path is not in its normal form (`docs//a`, `x/../a`, `/a`) and that holds the last
+            // segment of one of the files: no list of spellings covers those, so they are read and PHP normalises them.
+            // Without the segment a table where every path starts with `/` would be read whole. A file with no segment
+            // to rely on drops the narrowing.
+            $segments = array_values(array_unique(array_map(static fn (array $file): string => Files::lastSegment($file['path']), $files)));
+            $chunks = in_array('', $segments, true) ? [[]] : array_chunk($segments, self::LOOKUP_CHUNK);
+
             foreach ($columns as $column) {
-                $selections[] = Selection::constrained($entry, static fn (EloquentBuilder $query) => Sql::whereNonCanonicalPath($query, $table.'.'.$column));
+                foreach ($chunks as $chunk) {
+                    $selections[] = Selection::constrained($entry, static fn (EloquentBuilder $query) => Sql::whereNonCanonicalPath($query, $table.'.'.$column, $chunk));
+                }
             }
         }
 

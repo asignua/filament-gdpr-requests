@@ -63,11 +63,58 @@ class PathColumnTypesTest extends TestCase
             }
         }
 
+        // Rows of other files, every one not in its normal form: the segment keeps them out of PHP.
+        $others = ['/bulk/1.txt', '//docs/Bob.txt', 'docs\\Ad.txt/../Bob.txt', '/docs/ada.txt'];
+
+        foreach ($others as $k => $path) {
+            DB::table('gdpr_paths')->insert(['id' => 10_000 + $k, 'disk' => 'local', 'path' => $path]);
+        }
+
         $found = array_flip([...$this->exact(), ...$this->nonCanonical()]);
         $missed = array_values(array_diff_key($expected, $found));
 
         $this->assertGreaterThan(50, count($expected));
         $this->assertSame([], $missed, 'Spellings of the file neither query finds.');
+
+        if ($driver !== 'sqlite') {
+            // SQLite's LIKE ignores ASCII case and lets `ada.txt` through; PHP tells it apart. Elsewhere none passes.
+            $this->assertSame([], array_values(array_intersect_key(array_flip(array_map(static fn (int $k): int => 10_000 + $k, array_keys($others))), $found)));
+        }
+    }
+
+    #[DataProvider('columnTypes')]
+    public function test_the_segment_is_matched_literally(string $driver, string $type): void
+    {
+        $this->givenPathColumn($driver, $type);
+        $rows = [1 => '/docs/50%_a!b.txt', 2 => '/docs/50x_a!b.txt', 3 => '/docs/50%ya!b.txt', 4 => '/docs/50%_ab.txt', 5 => 'docs\\50%_a!b.txt'];
+
+        foreach ($rows as $id => $path) {
+            DB::table('gdpr_paths')->insert(['id' => $id, 'disk' => 'local', 'path' => $path]);
+        }
+
+        $segment = Files::lastSegment('docs/50%_a!b.txt');
+        $found = $this->ids(static fn (Builder $query) => Sql::whereNonCanonicalPath($query, 'gdpr_paths.path', [$segment]));
+        sort($found);
+
+        $this->assertSame('50%_a!b.txt', $segment);
+        $this->assertSame([1, 5], $found, '% and _ in the name match only themselves.');
+    }
+
+    public function test_the_last_segment_survives_every_spelling(): void
+    {
+        PathSpellings::configureDisks();
+        $target = Files::identity('local', 'docs/Ada.txt');
+
+        foreach (PathSpellings::generated() as [$disk, $path]) {
+            if (Files::identity($disk, $path) === $target) {
+                $this->assertStringContainsString('Ada.txt', $path);
+                $this->assertSame('Ada.txt', Files::lastSegment($path), $disk.':'.$path);
+            }
+        }
+
+        $this->assertSame('', Files::lastSegment('/'));
+        $this->assertSame('', Files::lastSegment('../..'));
+        $this->assertSame('b', Files::lastSegment('a\\b'));
     }
 
     private function givenPathColumn(string $driver, string $type): void
@@ -107,7 +154,9 @@ class PathColumnTypesTest extends TestCase
      */
     private function nonCanonical(): array
     {
-        return $this->ids(static fn (Builder $query) => Sql::whereNonCanonicalPath($query, 'gdpr_paths.path'));
+        $segments = [Files::lastSegment('docs/Ada.txt')];
+
+        return $this->ids(static fn (Builder $query) => Sql::whereNonCanonicalPath($query, 'gdpr_paths.path', $segments));
     }
 
     /**

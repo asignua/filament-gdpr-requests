@@ -32,10 +32,24 @@ class LargeTableBenchmark extends TestCase
 
     public function test_preview_confirm_and_run_with_a_million_rows_elsewhere(): void
     {
+        $this->bench('bulk/', 'canonical');
+    }
+
+    /**
+     * Every stored path starts with `/`, so every row is not in its normal form: the non-canonical pre-filter alone
+     * would hand all of them to PHP.
+     */
+    public function test_preview_confirm_and_run_with_a_million_leading_slash_rows_elsewhere(): void
+    {
+        $this->bench('/bulk/', 'leading slash');
+    }
+
+    private function bench(string $prefix, string $label): void
+    {
         $rows = (int) env('GDPR_BENCH_ROWS', 1_000_000);
         $ada = Shop::customer('Ada', 'ada@customer.example');
         $many = Shop::customer('Many', 'many@customer.example');
-        $seeded = $this->seedDocuments($many->id, $rows);
+        $seeded = $this->seedDocuments($many->id, $rows, $prefix);
         $request = Shop::request($ada, RequestType::Erasure, $this->user('dpo', 'Confirmer'));
         $results = ['seed' => $seeded];
 
@@ -50,7 +64,7 @@ class LargeTableBenchmark extends TestCase
 
         $this->assertSame(RequestStatus::Fulfilled, $request->refresh()->status);
 
-        fwrite(STDERR, sprintf("\n[bench %s, %s rows]\n", DB::getDriverName(), number_format($rows, 0, '.', ' ')));
+        fwrite(STDERR, sprintf("\n[bench %s, %s %s rows]\n", DB::getDriverName(), number_format($rows, 0, '.', ' '), $label));
 
         foreach ($results as $phase => [$seconds, $queries]) {
             fwrite(STDERR, sprintf("  %-8s %7.2f s %7d queries\n", $phase, $seconds, $queries));
@@ -60,15 +74,15 @@ class LargeTableBenchmark extends TestCase
     /**
      * @return array{float, int}
      */
-    private function seedDocuments(int $customerId, int $rows): array
+    private function seedDocuments(int $customerId, int $rows, string $prefix): array
     {
-        return $this->measure(static function () use ($customerId, $rows): void {
+        return $this->measure(static function () use ($customerId, $rows, $prefix): void {
             $columns = 'INSERT INTO documents (customer_id, title, disk, path, created_at, updated_at) ';
 
             match (DB::getDriverName()) {
-                'pgsql' => DB::insert($columns."SELECT ?, 'Bulk', 'local', 'bulk/' || g || '.txt', now(), now() FROM generate_series(1, ?) g", [$customerId, $rows]),
-                'mysql', 'mariadb' => DB::insert($columns."SELECT ?, 'Bulk', 'local', CONCAT('bulk/', seq, '.txt'), NOW(), NOW() FROM seq_1_to_{$rows}", [$customerId]),
-                default => DB::insert('WITH RECURSIVE g(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM g WHERE n < ?) '.$columns."SELECT ?, 'Bulk', 'local', 'bulk/' || n || '.txt', datetime('now'), datetime('now') FROM g", [$rows, $customerId]),
+                'pgsql' => DB::insert($columns."SELECT ?, 'Bulk', 'local', CAST(? AS TEXT) || g || '.txt', now(), now() FROM generate_series(1, ?) g", [$customerId, $prefix, $rows]),
+                'mysql', 'mariadb' => DB::insert($columns."SELECT ?, 'Bulk', 'local', CONCAT(?, seq, '.txt'), NOW(), NOW() FROM seq_1_to_{$rows}", [$customerId, $prefix]),
+                default => DB::insert('WITH RECURSIVE g(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM g WHERE n < ?) '.$columns."SELECT ?, 'Bulk', 'local', ? || n || '.txt', datetime('now'), datetime('now') FROM g", [$rows, $customerId, $prefix]),
             };
 
             if (DB::getDriverName() === 'pgsql') {
