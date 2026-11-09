@@ -113,6 +113,11 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
   rows and the request read `fulfilled` with the data still there. The address expression now adds `COLLATE "default"`
   after the cast. MariaDB was already consistent (`CONVERT … USING utf8mb4` drops the column collation); tests cover
   `C`, `POSIX` and `ucs_basic` columns and five MariaDB collations.
+- The non-canonical path check reads a MariaDB column in any character set. `LIKE BINARY` compared the column's raw
+  bytes, so in a `utf16`, `ucs2` or `utf32` column it matched none of the spellings, in `sjis` none with a backslash,
+  and Ada's file was deleted while Bob's row named it. The column is now `CONVERT … USING utf8mb4` under
+  `utf8mb4_bin`; a test runs the generated spellings through 17 column types (MariaDB utf8mb4, utf8mb3, latin1, ascii,
+  gbk, big5, sjis, utf16, ucs2, utf32, varbinary; Postgres text, `C`, ICU, nondeterministic ICU, citext; SQLite).
 
 ### Changed
 

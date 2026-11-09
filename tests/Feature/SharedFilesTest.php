@@ -10,6 +10,7 @@ use Asignua\FilamentGdprRequests\Enums\RequestStatus;
 use Asignua\FilamentGdprRequests\Erasure\Blocker;
 use Asignua\FilamentGdprRequests\Services\ErasureService;
 use Asignua\FilamentGdprRequests\Support\Files;
+use Asignua\FilamentGdprRequests\Tests\Support\PathSpellings;
 use Asignua\FilamentGdprRequests\Tests\Support\RunsErasures;
 use Asignua\FilamentGdprRequests\Tests\Support\Shop;
 use Asignua\FilamentGdprRequests\Tests\TestCase;
@@ -127,46 +128,9 @@ class SharedFilesTest extends TestCase
         $this->assertNotSame(RequestStatus::Fulfilled, $request->refresh()->status);
     }
 
-    /**
-     * Spellings of Ada's file (and near misses that are other files) built from random leads, separators and tails, on
-     * the disk itself, a scoped disk and a second disk name over the same root. Seeded: a failure names its spelling.
-     *
-     * @return list<array{string, string}>
-     */
-    private static function generatedSpellings(): array
-    {
-        $bases = [['local', ['docs', 'Ada.txt']], ['local-docs', ['Ada.txt']], ['local-again', ['docs', 'Ada.txt']]];
-        $leads = ['', '', '/', './', '//', '/./', 'x/../', './x/../', '\\', '.\\', 'a/b/../../', '../', '/../'];
-        $separators = ['/', '/', '//', '///', '/./', '/y/../', '\\', '\\\\', '/.\\', '\\./', '/z/./../'];
-        $tails = ['', '', '/', '/.', '//', '\\', '/x/..', '.bak', '/..'];
-        $spellings = [
-            ['local', 'docs//Ada.txt'], ['local', 'docs/x/../Ada.txt'], ['local', 'docs/./Ada.txt'],
-            ['local', 'docs/ada.txt'], ['local', 'docs/x/Ada.txt'], ['local', 'docsAda.txt'], ['local', 'docs/../Ada.txt'],
-        ];
-        mt_srand(20261109);
-
-        for ($i = 0; $i < 150; $i++) {
-            [$disk, $segments] = $bases[$i % 3];
-            $path = $leads[mt_rand(0, count($leads) - 1)];
-
-            foreach ($segments as $k => $segment) {
-                $path .= ($k > 0 ? $separators[mt_rand(0, count($separators) - 1)] : '').$segment;
-            }
-
-            $spellings[] = [$disk, $path.$tails[mt_rand(0, count($tails) - 1)]];
-        }
-
-        mt_srand();
-
-        return array_values(array_unique($spellings, SORT_REGULAR));
-    }
-
     public function test_declared_file_columns_catch_every_spelling_the_full_scan_catches(): void
     {
-        config([
-            'filesystems.disks.local-docs' => ['driver' => 'scoped', 'disk' => 'local', 'prefix' => 'docs'],
-            'filesystems.disks.local-again' => ['driver' => 'local', 'root' => rtrim((string) config('filesystems.disks.local.root'), '/').'/'],
-        ]);
+        PathSpellings::configureDisks();
         $ada = Shop::customer('Ada', 'ada@customer.example');
         $bob = Shop::customer('Bob', 'bob@customer.example');
         $request = $this->erasureOf($ada);
@@ -174,7 +138,7 @@ class SharedFilesTest extends TestCase
         $differences = [];
         $same = 0;
 
-        foreach (self::generatedSpellings() as [$disk, $path]) {
+        foreach (PathSpellings::generated() as [$disk, $path]) {
             Document::query()->where('customer_id', $bob->id)->update(['disk' => $disk, 'path' => $path]);
             $indexed = in_array('file_shared', $this->codes(app(ErasureService::class)->plan($request)), true);
             $this->declareDocuments(columns: false);
