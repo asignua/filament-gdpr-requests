@@ -88,6 +88,9 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - A database whose `LOWER` knows less than PHP's (Postgres created with `LC_CTYPE 'C'` folds ASCII only) is refused
   with a message that shows both answers. Before, an address with a non-ASCII capital was missed by the preview and by the
   check after the run, and the request read `fulfilled` with the rows still there.
+- The shared-file check compares files as the disk reads them. `/docs/Ada.txt` on Bob's row and `docs/Ada.txt` on Ada's
+  were two files to it, and Bob's file was deleted. Paths go through Flysystem's normaliser on both sides, and two disk
+  names over one storage (a `scoped` disk, a second name for the same root) count as one disk.
 
 ### Changed
 

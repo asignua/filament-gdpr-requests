@@ -15,6 +15,7 @@ use Asignua\FilamentGdprRequests\DataMap\Selection;
 use Asignua\FilamentGdprRequests\DataMap\SubjectResolver;
 use Asignua\FilamentGdprRequests\Models\GdprRequest;
 use Asignua\FilamentGdprRequests\Support\Environment;
+use Asignua\FilamentGdprRequests\Support\Files;
 use Asignua\FilamentGdprRequests\Support\Pseudonym;
 use Asignua\FilamentGdprRequests\Support\Schema;
 use Carbon\CarbonImmutable;
@@ -210,10 +211,10 @@ final class Planner
                     $unrepeatable += array_fill_keys(RowRules::unrepeatable($erase, $table, $key, $row, $changes), true);
 
                     if ($watchFiles && $changes !== []) {
-                        $after = array_map(static fn (array $file): string => $file['disk']."\0".$file['path'], $this->applier->filesOf($selection, array_replace($row, $changes)));
+                        $after = array_map(static fn (array $file): string => Files::identity($file['disk'], $file['path']), $this->applier->filesOf($selection, array_replace($row, $changes)));
 
                         foreach ($this->applier->filesOf($selection, $row) as $file) {
-                            $orphans += in_array($file['disk']."\0".$file['path'], $after, true) ? 0 : 1;
+                            $orphans += in_array(Files::identity($file['disk'], $file['path']), $after, true) ? 0 : 1;
                         }
                     }
                 }
@@ -519,7 +520,7 @@ final class Planner
                     $removed[$group->table()."\0".$row[$key]] = true;
 
                     foreach ($this->applier->filesOf($group->selection, $row) as $file) {
-                        $files[$group->key()][$file['disk']."\0".$file['path']] = true;
+                        $files[$group->key()][Files::identity($file['disk'], $file['path'])] = true;
                     }
                 }
             } catch (Throwable) {
@@ -551,7 +552,7 @@ final class Planner
                     }
 
                     foreach ($this->applier->filesOf($selection, $row) as $file) {
-                        $id = $file['disk']."\0".$file['path'];
+                        $id = Files::identity($file['disk'], $file['path']);
 
                         if (isset($wanted[$id])) {
                             $namedBy[$id][$table] = true;
