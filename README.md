@@ -190,6 +190,9 @@ Before anything can be confirmed, the preview reads your live schema and **block
 - a callback targets a unique column without `unique: true`;
 - a rule targets the primary key, the column the rows are found by, a foreign-key column (other than `NULL`) or a column
   another table references;
+- a file this run would remove is still named by a row that stays, of any entry with `files()` in the whole map (two
+  records sharing one path): the message names the tables, not the people. Every row of those tables is read for this,
+  so keep `files()` resolvers cheap;
 - another entry anonymizes or deletes rows that a `retain` entry keeps: the report would call them kept;
 - a row you delete is still referenced by rows that are not deleted with it (soft-deleted ones counted);
 - a row you delete names files through `files()` and the strategy does not remove them: use `Erase::delete(files: true)`,

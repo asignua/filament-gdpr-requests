@@ -300,6 +300,7 @@ return [
         'subject_email_shared' => 'Rekordów z tym adresem w tabeli: :rows, więc nie wiadomo, czyje są wiersze. Najpierw popraw rekordy; do tego czasu nic nie jest po nim dopasowywane.',
         'files_left_behind' => 'Wiersze :table wskazują pliki, ale ich usunięcie zostawi te pliki i nic już na nie nie wskaże. Użyj Erase::delete(files: true).',
         'files_orphaned' => 'Anonimizacja :table zmienia miejsce, w którym wskazane są pliki (:files), ale ich nie usuwa, więc nic już na nie nie wskaże. Użyj Erase::anonymize(..., files: true) albo nie zmieniaj kolumn plików.',
+        'file_shared' => 'Pliki z :table, które to uruchomienie by usunęło, są nadal wskazywane przez inne pozostające wiersze z :others. Ich usunięcie zabrałoby plik innego rekordu. Daj każdemu wierszowi własny plik albo popraw te wiersze.',
         'loose_match' => 'Wierszy :table z niemal tym samym kluczem osoby w :column (inna wielkość liter lub odstępy): :rows. Wtyczka porównuje dokładnie i nie wie, czyje są. Popraw te wiersze.',
         'selection_unchunkable' => 'Własne dopasowanie w :table używa :clause, więc jego wierszy nie da się bezpiecznie czytać partiami i część mogłaby zostać. Dopasuj wiersze prostymi warunkami.',
         'retain_overlap' => ':rows wiersz(y) z :table, które „:kept” zachowuje z podstawy prawnej, zostałyby też zmienione lub usunięte przez ten wpis, choć raport mówi, że są zachowane. Zawęź jedno z dwóch dopasowań.',

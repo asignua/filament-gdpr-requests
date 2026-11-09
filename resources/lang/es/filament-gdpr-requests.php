@@ -300,6 +300,7 @@ return [
         'subject_email_shared' => ':rows registros de esta tabla tienen esta dirección, así que no indica de quién son las filas. Corrija primero los registros; hasta entonces no se busca nada por ella.',
         'files_left_behind' => 'Las filas de :table nombran archivos, pero al borrarlas esos archivos quedarían sin ninguna referencia. Use Erase::delete(files: true).',
         'files_orphaned' => 'La anonimización de :table cambia dónde se nombran :files archivo(s), pero no los elimina, así que nada volvería a apuntarles. Use Erase::anonymize(..., files: true) o no toque las columnas de archivos.',
+        'file_shared' => 'Archivos de :table que esta ejecución eliminaría siguen nombrados por otras filas de :others que se quedan. Eliminarlos quitaría el archivo de otro registro. Dé a cada fila su propio archivo o corrija esas filas.',
         'loose_match' => ':rows fila(s) de :table tienen en :column casi la clave de esta persona (otras mayúsculas o espacios). El plugin compara exactamente y no puede saber si son suyas. Corrija esas filas.',
         'selection_unchunkable' => 'La coincidencia propia en :table usa :clause, así que sus filas no pueden leerse por partes con seguridad y algunas podrían quedar. Busque las filas con condiciones simples.',
         'retain_overlap' => ':rows fila(s) de :table que «:kept» conserva por motivo legal también serían modificadas o eliminadas por esta entrada, mientras el informe dice que se conservan. Restrinja una de las dos coincidencias.',

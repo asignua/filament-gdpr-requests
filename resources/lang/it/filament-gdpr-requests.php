@@ -300,6 +300,7 @@ return [
         'subject_email_shared' => ':rows record di questa tabella hanno questo indirizzo, quindi non si può dire di chi siano le righe. Correggi prima i record; fino ad allora non si cerca nulla con esso.',
         'files_left_behind' => 'Le righe di :table indicano dei file, ma eliminandole quei file resterebbero senza più alcun riferimento. Usa Erase::delete(files: true).',
         'files_orphaned' => 'L’anonimizzazione di :table cambia dove sono indicati :files file, ma non li rimuove, quindi nulla li indicherebbe più. Usa Erase::anonymize(..., files: true) oppure non toccare le colonne dei file.',
+        'file_shared' => 'File di :table che questa esecuzione rimuoverebbe sono ancora indicati da altre righe di :others, che restano. Rimuoverli toglierebbe il file a un altro record. Dai a ogni riga il proprio file o correggi quelle righe.',
         'loose_match' => ':rows riga/righe di :table hanno in :column quasi la chiave di questa persona (maiuscole o spazi diversi). Il plugin confronta esattamente e non può dire se sono sue. Correggi quelle righe.',
         'selection_unchunkable' => 'La corrispondenza personalizzata su :table usa :clause, quindi le sue righe non possono essere lette a blocchi in sicurezza e alcune potrebbero restare. Trova le righe con condizioni semplici.',
         'retain_overlap' => ':rows riga/righe di :table che «:kept» conserva per motivo legale verrebbero anche modificate o eliminate da questa voce, mentre il rapporto dice che sono conservate. Restringi una delle due corrispondenze.',

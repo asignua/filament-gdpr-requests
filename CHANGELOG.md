@@ -77,6 +77,9 @@ All notable changes to `asignua/filament-gdpr-requests` are documented here.
 - An anonymization that changes where a row names its file (the path nulled or replaced) without `files: true` blocks
   the preview, like a deletion that leaves files behind; the file was orphaned.
 
+- A file that a row of another record still names is no longer removed: the preview (and every group run, and
+  `gdpr:retention`) blocks when a path to remove is named by a row that stays, listing tables only.
+
 ### Changed
 
 - The preview names the person and the record at the top; on a phone its rows become cards and no column is hidden.

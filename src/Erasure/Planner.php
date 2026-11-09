@@ -83,6 +83,7 @@ final class Planner
         }
 
         $this->checkRetainOverlap($groups);
+        $this->checkSharedFiles($groups);
         $readers = $this->closureReaders($groups);
         $groups = $this->order($groups, $schema, $readers);
         $this->checkClosureOrder($groups, $readers);
@@ -100,6 +101,8 @@ final class Planner
 
         $schema = new Schema;
         $plan = $this->inspect($entry, $selection, $action, $schema, [$entry->group => $selection], false);
+
+        $this->checkSharedFiles([$plan]);
 
         if ($action instanceof Delete) {
             $subject = $entry->subjectModel();
@@ -484,6 +487,95 @@ final class Planner
                 if ($rows > 0) {
                     $other->addBlocker('retain_overlap', ['table' => $table, 'kept' => $kept->label(), 'rows' => $rows === PHP_INT_MAX ? '?' : $rows]);
                 }
+            }
+        }
+    }
+
+    /**
+     * A file is removed only when every row that names it goes with it. Rows of the whole map are asked (through each
+     * entry's files() resolver), not only this person's: a path two records share must not lose the other record's file.
+     * The blocker names tables, never whose row it is.
+     *
+     * @param list<GroupPlan> $groups
+     */
+    private function checkSharedFiles(array $groups): void
+    {
+        /** @var array<string, true> $removed rows whose files this run removes, as "table\0key" */
+        $removed = [];
+        /** @var array<string, array<string, true>> $files group => files it removes, as "disk\0path" */
+        $files = [];
+
+        foreach ($groups as $group) {
+            $erase = $group->entry->getErase();
+
+            if ($erase === null || !$erase->removesFiles() || $group->entry->getFiles() === null || $group->isBlocked()) {
+                continue;
+            }
+
+            $key = $group->selection->keyName();
+
+            try {
+                foreach ($group->selection->rows() as $row) {
+                    $removed[$group->table()."\0".$row[$key]] = true;
+
+                    foreach ($this->applier->filesOf($group->selection, $row) as $file) {
+                        $files[$group->key()][$file['disk']."\0".$file['path']] = true;
+                    }
+                }
+            } catch (Throwable) {
+                continue; // the scan of the group failed the same way and is a blocker already
+            }
+        }
+
+        if ($files === []) {
+            return;
+        }
+
+        $wanted = array_merge(...array_values($files));
+        /** @var array<string, array<string, true>> $namedBy file => tables of rows that stay and still name it */
+        $namedBy = [];
+
+        foreach ($this->registry->all() as $entry) {
+            if ($entry->getFiles() === null) {
+                continue;
+            }
+
+            $selection = Selection::constrained($entry, static function (): void {});
+            $table = $selection->table();
+            $key = $selection->keyName();
+
+            try {
+                foreach ($selection->rows() as $row) {
+                    if (isset($removed[$table."\0".$row[$key]])) {
+                        continue;
+                    }
+
+                    foreach ($this->applier->filesOf($selection, $row) as $file) {
+                        $id = $file['disk']."\0".$file['path'];
+
+                        if (isset($wanted[$id])) {
+                            $namedBy[$id][$table] = true;
+                        }
+                    }
+                }
+            } catch (Throwable) {
+                // A table that cannot be read cannot vouch that none of its rows names the file.
+                foreach (array_keys($wanted) as $id) {
+                    $namedBy[$id][$table] = true;
+                }
+            }
+        }
+
+        foreach ($groups as $group) {
+            $tables = [];
+
+            foreach (array_keys($files[$group->key()] ?? []) as $id) {
+                $tables += $namedBy[$id] ?? [];
+            }
+
+            if ($tables !== []) {
+                ksort($tables);
+                $group->addBlocker('file_shared', ['table' => $group->table(), 'others' => implode(', ', array_keys($tables))]);
             }
         }
     }

@@ -300,6 +300,7 @@ return [
         'subject_email_shared' => ':rows records in this table have this address, so it cannot tell whose rows are whose. Correct the records first; nothing is matched by it until then.',
         'files_left_behind' => 'Rows of :table name files, but deleting them leaves those files behind and nothing would point at them again. Use Erase::delete(files: true).',
         'files_orphaned' => 'The anonymization of :table changes where :files file(s) are named, but does not remove them, so nothing would point at them again. Use Erase::anonymize(..., files: true), or leave the file columns alone.',
+        'file_shared' => 'Files of :table that this run would remove are still named by other rows of :others, which stay. Removing them would take another record\'s file. Give every row its own file, or correct those rows.',
         'loose_match' => ':rows row(s) of :table hold almost this person\'s key in :column (other letter case or padding). The plugin matches exactly and cannot tell whether they are theirs. Correct those rows.',
         'selection_unchunkable' => 'The custom match on :table uses :clause, so its rows cannot be read safely in chunks and some could be left behind. Match the rows with plain conditions.',
         'retain_overlap' => ':rows row(s) of :table that ":kept" keeps for a legal reason would also be changed or deleted by this entry, while the report says they are kept. Narrow one of the two matches.',
