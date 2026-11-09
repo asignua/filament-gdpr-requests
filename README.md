@@ -167,6 +167,11 @@ How to write it well:
 - **The linked record decides who a request is about.** E-mail groups match on the address of the root row, not on what
   was typed on the request. Declare it with `subject(email: 'email')`: without it, an entry using `matchedByEmail()` blocks
   the run.
+- **Addresses** are compared after trimming white space (invisible characters included) and PHP's `mb_strtolower`. The
+  database narrows the rows and PHP decides. Two letters lowercase differently in PHP and in SQL (`İ`, and a word-final
+  `Σ`); the query folds both so that it never misses such an address. For every other letter the query relies on the
+  server's own lowercase tables (on SQLite PHP answers itself): an address in a script your server's version of Unicode
+  does not know may be missed, so check such rows by hand.
 - **Soft-deleted rows are always included.** Global scopes are removed from every query the plugin runs, including the
   subqueries a `matchedUsing()` closure builds through other models while it runs. `delete` really
   removes rows, soft-deleted ones too.

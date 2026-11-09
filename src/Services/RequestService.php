@@ -168,8 +168,13 @@ final class RequestService
         }
 
         $query = $root->model::query()->withoutGlobalScopes();
-        Sql::whereNormalizedEquals($query, $query->getModel()->getTable().'.'.$column, $email);
-        $keys = $query->limit(2)->pluck($query->getModel()->getKeyName());
+        $table = $query->getModel()->getTable();
+        $key = $query->getModel()->getKeyName();
+        Sql::whereNormalizedEquals($query, $table.'.'.$column, $email);
+        // The database narrows, PHP decides: the SQL comparison may let through an address that only folds the same way.
+        $keys = $query->toBase()->select([$table.'.'.$key.' as gdpr_key', $table.'.'.$column.' as gdpr_email'])->get()
+            ->filter(static fn (object $row): bool => Pseudonym::normalizeEmail(is_scalar($row->gdpr_email) ? (string) $row->gdpr_email : null) === $email)
+            ->pluck('gdpr_key');
 
         if ($keys->count() > 1) {
             throw GdprException::translated('email_ambiguous');

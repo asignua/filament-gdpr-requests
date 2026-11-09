@@ -30,6 +30,16 @@ final class Sql
 
     private const string SQLITE_FUNCTION = 'gdpr_normalize';
 
+    /** U+0130, whose lowercase in PHP is two code points. */
+    private const string DOTTED_I = "\u{130}";
+
+    private const string DOTTED_I_LOWER = "i\u{307}";
+
+    /** PHP lowercases a word-final capital sigma to ς, the server always to σ. */
+    private const string SIGMA_FINAL = "\u{3C2}";
+
+    private const string SIGMA = "\u{3C3}";
+
     /**
      * The inside of a regular expression class holding TRIMMED.
      */
@@ -40,7 +50,8 @@ final class Sql
 
     /**
      * The normalised form of the column equals the value: never LIKE. The identifier is quoted by the grammar and the
-     * values are bindings. Used for addresses, and for keys when looking for rows that hold a near miss of one.
+     * values are bindings. Used for addresses, and for keys when looking for rows that hold a near miss of one. On a
+     * server it may also find rows PHP's normalisation tells apart (see the folding below): compare the rows in PHP.
      *
      * @param Builder<Model> $query
      */
@@ -50,12 +61,23 @@ final class Sql
         $column = $base->getGrammar()->wrap($qualifiedColumn);
         $connection = $query->getModel()->getConnection();
 
+        // The server's LOWER maps one letter to one letter; PHP's mb_strtolower does not for two of them (İ becomes i plus
+        // a combining dot, a final Σ becomes ς). Both sides are folded the same way here, so the query finds a superset of
+        // what PHP accepts; every caller then compares in PHP exactly.
+        $folded = str_replace(self::SIGMA_FINAL, self::SIGMA, $normalizedValue);
+
         [$sql, $bindings] = match ($connection->getDriverName()) {
             'sqlite' => [self::sqliteFunction($connection).'('.$column.') = ?', [$normalizedValue]],
             // Postgres text cannot hold NUL, not even as an argument.
-            'pgsql' => ['LOWER(BTRIM(CAST('.$column.' AS TEXT), ?)) = ?', [self::characters(), $normalizedValue]],
+            'pgsql' => [
+                'REPLACE(LOWER(REPLACE(BTRIM(CAST('.$column.' AS TEXT), ?), ?, ?)), ?, ?) = ?',
+                [self::characters(), self::DOTTED_I, self::DOTTED_I_LOWER, self::SIGMA_FINAL, self::SIGMA, $folded],
+            ],
             // CONVERT first: on a latin1 column the expression would otherwise run without Unicode.
-            'mysql', 'mariadb' => ["LOWER(REGEXP_REPLACE(CONVERT({$column} USING utf8mb4), ?, '')) = ?", ['\A['.self::characterClass().']+|['.self::characterClass().']+\z', $normalizedValue]],
+            'mysql', 'mariadb' => [
+                "REPLACE(LOWER(REPLACE(REGEXP_REPLACE(CONVERT({$column} USING utf8mb4), ?, ''), ?, ?)), ?, ?) = ?",
+                ['\A['.self::characterClass().']+|['.self::characterClass().']+\z', self::DOTTED_I, self::DOTTED_I_LOWER, self::SIGMA_FINAL, self::SIGMA, $folded],
+            ],
             default => ['LOWER(TRIM('.$column.')) = ?', [$normalizedValue]],
         };
 
