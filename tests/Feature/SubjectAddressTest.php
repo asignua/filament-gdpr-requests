@@ -126,7 +126,7 @@ class SubjectAddressTest extends TestCase
         $request = Shop::request($ada, RequestType::Access, $dpo);
 
         $this->expectException(GdprException::class);
-        $this->expectExceptionMessage(__('filament-gdpr-requests::filament-gdpr-requests.blocker.subject_email_shared', ['rows' => 2]));
+        $this->expectExceptionMessageContaining(__('filament-gdpr-requests::filament-gdpr-requests.blocker.subject_email_shared', ['rows' => 2]));
 
         app(ExportService::class)->request($request, $dpo);
     }
