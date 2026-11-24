@@ -3,7 +3,9 @@
 [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/asignua/filament-gdpr-requests.svg?style=flat-square)](https://packagist.org/packages/asignua/filament-gdpr-requests)
 [![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-gdpr-requests/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/asignua/filament-gdpr-requests/actions/workflows/tests.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/asignua/filament-gdpr-requests.svg?style=flat-square)](https://packagist.org/packages/asignua/filament-gdpr-requests)
 [![License](https://img.shields.io/packagist/l/asignua/filament-gdpr-requests.svg?style=flat-square)](https://github.com/asignua/filament-gdpr-requests/blob/main/LICENSE.md)
+[![Plumb score](https://plumbphp.dev/badges/asignua/filament-gdpr-requests/composite.svg)](https://plumbphp.dev/asignua/filament-gdpr-requests)
 
 <img class="filament-hidden" src="https://raw.githubusercontent.com/asignua/filament-gdpr-requests/v1.0.0/art/cover.jpg" alt="Filament GDPR Requests">
 
@@ -382,6 +384,8 @@ The package ships [Laravel Boost](https://laravel.com/docs/boost) guidelines (`r
 - [Record Lock](https://filamentphp.com/plugins/asign-record-lock) — one editor per record
 
 All plugins: <https://filamentphp.com/plugins?q=asign>
+
+Catalogue of free and commercial plugins: <https://asign.tech/en/plugins>
 
 ## Changelog
 
